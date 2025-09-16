@@ -1,8 +1,8 @@
-"""init db
+"""initial
 
-Revision ID: 949929045eff
+Revision ID: 9c101da459b0
 Revises: 
-Create Date: 2024-06-21 07:28:55.860479
+Create Date: 2025-09-16 12:51:28.369406
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '949929045eff'
+revision: str = '9c101da459b0'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,7 +29,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_admin_user_id'), 'admin_user', ['id'], unique=False)
     op.create_table('telegram_users',
-    sa.Column('status', sa.Enum('NOT_ACTIVE', 'BASE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'BRILLIANT', name='donatestatus'), nullable=True),
+    sa.Column('status', sa.Enum('NOT_ACTIVE', 'BASE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'BRILLIANT', name='donatestatus'), nullable=True),
     sa.Column('sponsor_user_id', sa.BigInteger(), nullable=True),
     sa.Column('invites_count', sa.Integer(), nullable=True),
     sa.Column('donates_sum', sa.Float(), nullable=True),
@@ -54,9 +54,10 @@ def upgrade() -> None:
     op.create_index(op.f('ix_telegram_users_user_id'), 'telegram_users', ['user_id'], unique=True)
     op.create_table('matrices',
     sa.Column('owner_id', sa.UUID(), nullable=True),
-    sa.Column('status', sa.Enum('NOT_ACTIVE', 'BASE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'BRILLIANT', name='donatestatus'), nullable=True),
+    sa.Column('status', sa.Enum('NOT_ACTIVE', 'BASE', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND', 'BRILLIANT', name='donatestatus'), nullable=True),
+    sa.Column('matrices', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('matrix_telegram_usernames', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('telegram_users', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('telegram_users_positions', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
@@ -64,6 +65,8 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_matrices_id'), 'matrices', ['id'], unique=False)
+    op.create_index(op.f('ix_matrices_matrices'), 'matrices', ['matrices'], unique=False)
+    op.create_index(op.f('ix_matrices_matrix_telegram_usernames'), 'matrices', ['matrix_telegram_usernames'], unique=False)
     op.create_index(op.f('ix_matrices_owner_id'), 'matrices', ['owner_id'], unique=False)
     op.create_index(op.f('ix_matrices_status'), 'matrices', ['status'], unique=False)
     op.create_index(op.f('ix_matrices_telegram_users'), 'matrices', ['telegram_users'], unique=False)
@@ -125,6 +128,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_matrices_telegram_users'), table_name='matrices')
     op.drop_index(op.f('ix_matrices_status'), table_name='matrices')
     op.drop_index(op.f('ix_matrices_owner_id'), table_name='matrices')
+    op.drop_index(op.f('ix_matrices_matrix_telegram_usernames'), table_name='matrices')
+    op.drop_index(op.f('ix_matrices_matrices'), table_name='matrices')
     op.drop_index(op.f('ix_matrices_id'), table_name='matrices')
     op.drop_table('matrices')
     op.drop_index(op.f('ix_telegram_users_user_id'), table_name='telegram_users')

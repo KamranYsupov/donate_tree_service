@@ -28,30 +28,20 @@ class DonateService:
         self._repository_matrix = repository_matrix
 
     @staticmethod
-    def _get_donate_percent_and_reminder(donate_sum) -> tuple[float, int | float]:
-        donate_remainder = 0
-
-        if donate_sum % 3 == 0:
-            donate_percent = donate_sum / 3
-        else:
-            donate_percent = donate_sum * 33 / 100
-            donate_remainder = donate_sum - (donate_percent * 10 * 3 / 10)
-
-        return donate_percent, donate_remainder
-
-    @staticmethod
     def get_donate_status(donate_sum: int) -> DonateStatus:
-        if donate_sum == 1500:
+        if donate_sum == 10:
             return DonateStatus.BASE
-        elif donate_sum == 4500:
+        elif donate_sum == 30:
             return DonateStatus.BRONZE
-        elif donate_sum == 15000:
+        elif donate_sum == 100:
             return DonateStatus.SILVER
-        elif donate_sum == 45000:
+        elif donate_sum == 300:
             return DonateStatus.GOLD
-        elif donate_sum == 150000:
+        elif donate_sum == 1000:
             return DonateStatus.PLATINUM
-        elif donate_sum == 450000:
+        elif donate_sum == 3000:
+            return DonateStatus.DIAMOND
+        elif donate_sum == 10000:
             return DonateStatus.BRILLIANT
 
     @staticmethod
@@ -64,7 +54,7 @@ class DonateService:
 
     async def _add_user_to_admin_matrix(
             self,
-            donate_percent: int | float,
+            donate_sum: int | float,
             status: DonateStatus,
             donations_data: dict,
     ) -> Matrix:
@@ -74,7 +64,7 @@ class DonateService:
             status=status,
         )
 
-        self._extend_donations_data(donations_data, admin, donate_percent)
+        self._extend_donations_data(donations_data, admin, donate_sum)
 
         for matrix in admin_matrices:
             if get_matrices_length(matrix.matrices) < 12:
@@ -82,36 +72,18 @@ class DonateService:
 
         return admin_matrices[-1]
 
-    async def send_donations_to_sponsors(
-            self,
-            sponsors: tuple[TelegramUser, TelegramUser, TelegramUser],
-            donate_sum: int,
-            donations_data: dict,
-    ) -> dict:
-        donate_percent, donate_remainder = self._get_donate_percent_and_reminder(
-            donate_sum
-        )
-        current_user, first_sponsor, second_sponsor = sponsors
-
-        if second_sponsor:
-            self._extend_donations_data(donations_data, second_sponsor, donate_percent)
-
-        self._extend_donations_data(donations_data, first_sponsor, donate_percent + donate_remainder)
-
-        return donations_data
-
     @inject
     async def _send_donate_to_matrix_owner(
             self,
             matrix: Matrix,
             current_user: TelegramUser,
             first_sponsor: TelegramUser,
-            donate_percent: int | float,
+            donate_sum: int | float,
             status: DonateStatus,
             donations_data: dict,
     ) -> Matrix:
         if len(matrix.matrices.keys()) >= 3:
-            self._extend_donations_data(donations_data, first_sponsor, donate_percent)
+            self._extend_donations_data(donations_data, first_sponsor, donate_sum)
             return matrix
         else:
             parent_matrix = self._repository_matrix.get_parent_matrix(
@@ -120,14 +92,14 @@ class DonateService:
 
             if not parent_matrix:
                 await self._add_user_to_admin_matrix(
-                    donate_percent, status, donations_data
+                    donate_sum, status, donations_data
                 )
                 return matrix
 
             # переделать
 
             parent_owner = self._repository_telegram_user.get(id=parent_matrix.owner_id)
-            self._extend_donations_data(donations_data, parent_owner, donate_percent)
+            self._extend_donations_data(donations_data, parent_owner, donate_sum)
 
             return matrix
 
@@ -138,9 +110,6 @@ class DonateService:
             donate_sum: int,
             donations_data: dict,
     ) -> Matrix:
-        donate_percent, donate_remainder = self._get_donate_percent_and_reminder(
-            donate_sum
-        )
         status = self.get_donate_status(donate_sum)
 
         first_sponsor_matrices = self._repository_matrix.get_user_matrices(
@@ -150,7 +119,7 @@ class DonateService:
 
         if first_sponsor.is_admin:
             return await self._add_user_to_admin_matrix(
-                donate_percent * 2,
+                donate_sum,
                 status,
                 donations_data,
             )
@@ -161,7 +130,7 @@ class DonateService:
                     matrix,
                     current_user,
                     first_sponsor,
-                    donate_percent,
+                    donate_sum,
                     status,
                     donations_data,
                 )
@@ -169,7 +138,7 @@ class DonateService:
         else:
             return await self._find_free_matrix(
                 current_user,
-                donate_percent,
+                donate_sum,
                 status,
                 donations_data,
             )
@@ -178,20 +147,23 @@ class DonateService:
     async def _find_free_matrix(
             self,
             user_to_add: TelegramUser,
-            donate_percent: int | float,
+            donate_sum: int | float,
             status: DonateStatus,
             donations_data: dict,
     ):
         while True:
-            next_sponsor = self._repository_telegram_user.get(user_id=user_to_add.sponsor_user_id)
+            next_sponsor = self._repository_telegram_user.get(
+                user_id=user_to_add.sponsor_user_id
+            )
             if next_sponsor is None:
                 return await self._add_user_to_admin_matrix(
-                    donate_percent,
+                    donate_sum,
                     status,
                     donations_data,
                 )
 
-            if not int(status.value.split()[-1]) <= int(next_sponsor.status.value.split()[-1]):
+            if not (int(status.value.split()[-1])
+                    <= int(next_sponsor.status.value.split()[-1])):
                 user_to_add = next_sponsor
                 continue
 
@@ -202,7 +174,12 @@ class DonateService:
             for matrix in next_sponsor_matrices:
                 if get_matrices_length(matrix.matrices) < 12:
                     await self._send_donate_to_matrix_owner(
-                        matrix, user_to_add, next_sponsor, donate_percent, status, donations_data
+                        matrix,
+                        user_to_add,
+                        next_sponsor,
+                        donate_sum,
+                        status,
+                        donations_data
                     )
 
                     return matrix

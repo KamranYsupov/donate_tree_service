@@ -20,12 +20,13 @@ from app.models.mixins import TimestampedMixin, UUIDMixin, AbstractTelegramUser
 
 class DonateStatus(enum.Enum):
     NOT_ACTIVE = "не активирован"
-    BASE = "Стартовый - 1500"
-    BRONZE = "Бронза - 4500"
-    SILVER = "Серебро - 15000"
-    GOLD = "Золото - 45000"
-    PLATINUM = "Алмаз - 150000"
-    BRILLIANT = "Бриллиант - 450000"
+    BASE = "Стартовый - $10"
+    BRONZE = "Бронза - $30"
+    SILVER = "Серебро - $100"
+    GOLD = "Золото - $300"
+    PLATINUM = "Платина - $1000"
+    DIAMOND = "Алмаз - $3000"
+    BRILLIANT = "Бриллиант - $10000"
 
 
 status_list = [
@@ -34,6 +35,7 @@ status_list = [
     DonateStatus.SILVER,
     DonateStatus.GOLD,
     DonateStatus.PLATINUM,
+    DonateStatus.DIAMOND,
     DonateStatus.BRILLIANT,
 ]
 

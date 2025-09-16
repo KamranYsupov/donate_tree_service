@@ -12,7 +12,7 @@ def get_callback_value(callback_data: str) -> str:
 
 def check_telegram_user_status(telegram_user: TelegramUser, status: DonateStatus) -> bool:
     expression = (telegram_user.status.value == DonateStatus.NOT_ACTIVE.value
-                  or int(status.value.split()[-1]) > int(telegram_user.status.value.split()[-1]))
+                  or int(status.value.split('$')[-1]) > int(telegram_user.status.value.split('$')[-1]))
 
     return expression
 

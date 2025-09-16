@@ -116,121 +116,121 @@ async def admin(
         reply_markup=get_reply_keyboard(admin_user),
     )
 
-#
-# @start_router.message(F.text.startswith("fake_"))
-# @inject
-# @commit_and_close_session
-# async def add_fake_user(
-#         message: Message,
-#         telegram_user_service: TelegramUserService = Provide[
-#             Container.telegram_user_service
-#         ],
-#         donate_service: DonateService = Provide[Container.donate_service],
-#         matrix_service: MatrixService = Provide[Container.matrix_service],
-# ):
-#     donate_sum = int(get_callback_value(message.text))
-#     status = donate_service.get_donate_status(donate_sum)
-#
-#     current_user = await telegram_user_service.get_telegram_user(
-#         user_id=message.from_user.id
-#     )
-#
-#     user = generate_random_user()
-#     user.status = status
-#     user.sponsor_user_id = current_user.user_id
-#
-#     fake_user = await telegram_user_service.create_telegram_user(
-#         user=user
-#     )
-#
-#     created_matrix_dict = {"owner_id": fake_user.id, "status": status}
-#     created_matrix_entity = MatrixEntity(**created_matrix_dict)
-#     created_matrix = await matrix_service.create_matrix(matrix=created_matrix_entity)
-#
-#     current_matrix = await matrix_service.get_matrix(
-#         owner_id=current_user.id,
-#         status=status,
-#     )
-#     await matrix_service.add_to_matrix(current_matrix, created_matrix, fake_user)
-#
-#     await message.answer(
-#         f"✅ пользователь {fake_user.username} успешно добавлен в {current_matrix.id}!\n"
-#         f"Статус матрицы: <b>{current_matrix.status.value}</b>"
-#         f"{settings.bot_link}?start={fake_user.user_id}",
-#         parse_mode="HTML",
-#     )
-#
-#
+
+@start_router.message(F.text.startswith("fake_"))
+@inject
+@commit_and_close_session
+async def add_fake_user(
+        message: Message,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+        donate_service: DonateService = Provide[Container.donate_service],
+        matrix_service: MatrixService = Provide[Container.matrix_service],
+):
+    donate_sum = int(get_callback_value(message.text))
+    status = donate_service.get_donate_status(donate_sum)
+
+    current_user = await telegram_user_service.get_telegram_user(
+        user_id=message.from_user.id
+    )
+
+    user = generate_random_user()
+    user.status = status
+    user.sponsor_user_id = current_user.user_id
+
+    fake_user = await telegram_user_service.create_telegram_user(
+        user=user
+    )
+
+    created_matrix_dict = {"owner_id": fake_user.id, "status": status}
+    created_matrix_entity = MatrixEntity(**created_matrix_dict)
+    created_matrix = await matrix_service.create_matrix(matrix=created_matrix_entity)
+
+    current_matrix = await matrix_service.get_matrix(
+        owner_id=current_user.id,
+        status=status,
+    )
+    await matrix_service.add_to_matrix(current_matrix, created_matrix, fake_user)
+
+    await message.answer(
+        f"✅ пользователь {fake_user.username} успешно добавлен в {current_matrix.id}!\n"
+        f"Статус матрицы: <b>{current_matrix.status.value}</b>\n"
+        f"{settings.bot_link}?start={fake_user.user_id}",
+        parse_mode="HTML",
+    )
+
+
 # # Тут функции только для тестов поэтому нет DRY
-# @start_router.message(Command("create_admin"))
-# @inject
-# @commit_and_close_session
-# async def create_admin(
-#         message: Message,
-#         telegram_user_service: TelegramUserService = Provide[
-#             Container.telegram_user_service
-#         ],
-#         matrix_service: MatrixService = Provide[Container.matrix_service],
-# ):
-#     admin_user = await telegram_user_service.get_telegram_user(is_admin=True)
-#     if admin_user:
-#         return
-#     user = generate_random_user()
-#     user.status = DonateStatus.BASE
-#     user.is_admin = True
-#
-#     admin_user = await telegram_user_service.create_telegram_user(user=user)
-#
-#     for status in status_list:
-#         matrix_dict = {"owner_id": admin_user.id, "status": status}
-#         matrix = MatrixEntity(**matrix_dict)
-#         await matrix_service.create_matrix(matrix=matrix)
-#
-#     await message.answer(
-#         f"✅ Готово - https://t.me/Kamranchik_Bot?start={admin_user.user_id}",
-#     )
-#
-#
-# @start_router.message(F.text.startswith("fakeadmin_"))
-# @inject
-# @commit_and_close_session
-# async def add_fake_user(
-#         message: Message,
-#         telegram_user_service: TelegramUserService = Provide[
-#             Container.telegram_user_service
-#         ],
-#         donate_service: DonateService = Provide[Container.donate_service],
-#         matrix_service: MatrixService = Provide[Container.matrix_service],
-# ):
-#     donate_sum = int(get_callback_value(message.text))
-#     status = donate_service.get_donate_status(donate_sum)
-#     admin_user = await telegram_user_service.get_telegram_user(
-#         is_admin=True,
-#     )
-#
-#     user = generate_random_user()
-#     user.status = status
-#     user.sponsor_user_id = admin_user.user_id
-#
-#     fake_user = await telegram_user_service.create_telegram_user(
-#         user=user
-#     )
-#     matrix_dict = {"owner_id": fake_user.id, "status": status}
-#     matrix = MatrixEntity(**matrix_dict)
-#     created_matrix = await matrix_service.create_matrix(matrix=matrix)
-#
-#     admin_matrix = await matrix_service.get_matrix(
-#         owner_id=admin_user.id,
-#         status=status,
-#     )
-#     await matrix_service.add_to_matrix(admin_matrix, created_matrix, fake_user)
-#
-#     await message.answer(
-#         f"✅ пользователь {fake_user.username} успешно добавлен в {admin_matrix.id}!\n"
-#         f"Статус матрицы: <b>{admin_matrix.status.value}</b>"
-#         f"{settings.bot_link}?start={fake_user.user_id}",
-#         parse_mode="HTML",
-#     )
+@start_router.message(Command("create_admin"))
+@inject
+@commit_and_close_session
+async def create_admin(
+        message: Message,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+        matrix_service: MatrixService = Provide[Container.matrix_service],
+):
+    admin_user = await telegram_user_service.get_telegram_user(is_admin=True)
+    if admin_user:
+        return
+    user = generate_random_user()
+    user.status = DonateStatus.BASE
+    user.is_admin = True
+
+    admin_user = await telegram_user_service.create_telegram_user(user=user)
+
+    for status in status_list:
+        matrix_dict = {"owner_id": admin_user.id, "status": status}
+        matrix = MatrixEntity(**matrix_dict)
+        await matrix_service.create_matrix(matrix=matrix)
+
+    await message.answer(
+        f"✅ Готово - https://t.me/Kamranchik_Bot?start={admin_user.user_id}",
+    )
+
+
+@start_router.message(F.text.startswith("fakeadmin_"))
+@inject
+@commit_and_close_session
+async def add_fake_user(
+        message: Message,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+        donate_service: DonateService = Provide[Container.donate_service],
+        matrix_service: MatrixService = Provide[Container.matrix_service],
+):
+    donate_sum = int(get_callback_value(message.text))
+    status = donate_service.get_donate_status(donate_sum)
+    admin_user = await telegram_user_service.get_telegram_user(
+        is_admin=True,
+    )
+
+    user = generate_random_user()
+    user.status = status
+    user.sponsor_user_id = admin_user.user_id
+
+    fake_user = await telegram_user_service.create_telegram_user(
+        user=user
+    )
+    matrix_dict = {"owner_id": fake_user.id, "status": status}
+    matrix = MatrixEntity(**matrix_dict)
+    created_matrix = await matrix_service.create_matrix(matrix=matrix)
+
+    admin_matrix = await matrix_service.get_matrix(
+        owner_id=admin_user.id,
+        status=status,
+    )
+    await matrix_service.add_to_matrix(admin_matrix, created_matrix, fake_user)
+
+    await message.answer(
+        f"✅ пользователь {fake_user.username} успешно добавлен в {admin_matrix.id}!\n"
+        f"Статус матрицы: <b>{admin_matrix.status.value}</b>\n"
+        f"{settings.bot_link}?start={fake_user.user_id}",
+        parse_mode="HTML",
+    )
 
 
 def generate_random_user():
