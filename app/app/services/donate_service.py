@@ -162,8 +162,8 @@ class DonateService:
                     donations_data,
                 )
 
-            if not (int(status.value.split()[-1])
-                    <= int(next_sponsor.status.value.split()[-1])):
+            if not (int(status.value.split('$')[-1])
+                    <= int(next_sponsor.status.value.split('$')[-1])):
                 user_to_add = next_sponsor
                 continue
 
