@@ -310,6 +310,47 @@ async def donate_handler(
         donate_id=donate.id
     )
 
+    ### autoconfirm
+
+    transaction = transactions[0]
+    transaction = await donate_confirm_service.set_donate_transaction_is_confirmed(
+        donate_transaction_id=transaction.id
+    )
+    sponsor = await telegram_user_service.get_telegram_user(id=transaction.sponsor_id)
+    sponsor.bill += transaction.quantity
+    sender_user = await telegram_user_service.get_telegram_user(
+        id=donate.telegram_user_id
+    )
+    donate_confirm = await donate_confirm_service.check_donate_is_confirmed(
+        donate_id=transaction.donate_id
+    )
+    await callback.message.answer(f'{donate_confirm}')
+
+    if donate_confirm:
+        current_matrix_id = donate.matrix_id
+        current_matrix = await matrix_service.get_matrix(id=current_matrix_id)
+
+        sender_matrix_dict = {"owner_id": sender_user.id, "status": current_matrix.status}
+        sender_matrix_entity = MatrixEntity(**sender_matrix_dict)
+        sender_matrix = await matrix_service.create_matrix(matrix=sender_matrix_entity)
+
+        await matrix_service.add_to_matrix(current_matrix, sender_matrix, sender_user)
+
+        if check_telegram_user_status(sender_user, current_matrix.status):
+            sender_user.status = current_matrix.status
+
+        try:
+            await callback.bot.send_message(
+                text=f"Ваш донат успешно подтвержден!\n",
+                chat_id=sender_user.user_id,
+                reply_markup=get_reply_keyboard(sender_user),
+            )
+        except Exception:
+            pass
+
+    return
+    ###
+
     message = (
         f"Вы собираетесь отправить донат в размере {donate_sum}$.\n\n"
         f"Для этого свяжитесь с каждым пользователем из списка, "
@@ -794,7 +835,8 @@ async def confirm_admin_transaction(
         if (
                 sender_user.status.value == DonateStatus.NOT_ACTIVE.value
                 or
-                int(current_matrix.status.value.split()[-1]) > int(sender_user.status.value.split()[-1])
+                current_matrix.status.get_status_donate_value() >
+                sender_user.status.get_status_donate_value()
         ):
             sender_user.status = current_matrix.status
 

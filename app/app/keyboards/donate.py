@@ -43,16 +43,16 @@ def get_donations_keyboard(current_user: TelegramUser, status_list) -> dict:
 
         if current_user.status.value == status.value:
             for i in status_list[: status_list.index(status)]:
-                buttons[f"🟢{i.value}🟢"] = f"confirm_donate_🟢_{i.value.split('$')[-1]}"
+                buttons[f"🟢{i.value}🟢"] = f"confirm_donate_🟢_{i.get_status_donate_value()}"
                 count += 1
 
-            buttons[f"🔴{status.value}🔴"] = f"confirm_donate_🔴_{status.value.split('$')[-1]}"
+            buttons[f"🔴{status.value}🔴"] = f"confirm_donate_🔴_{status.get_status_donate_value()}"
             buttons[f"🟢{status_list[count + 1].value}🟢"] = (
-                f"confirm_donate_🟢_{status_list[count + 1].value.split('$')[-1]}"
+                f"confirm_donate_🟢_{status_list[count + 1].get_status_donate_value()}"
             )
 
             for i in status_list[status_list.index(status) + 2 :]:
-                buttons[f"🔴{i.value}🔴"] = f"confirm_donate_🔴_{i.value.split('$')[-1]}"
+                buttons[f"🔴{i.value}🔴"] = f"confirm_donate_🔴_{i.get_status_donate_value()}"
         else:
             continue
 

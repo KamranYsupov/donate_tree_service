@@ -28,6 +28,10 @@ class DonateStatus(enum.Enum):
     DIAMOND = "Алмаз - $3000"
     BRILLIANT = "Бриллиант - $10000"
 
+    def get_status_donate_value(self) -> int:
+        """Получение суммы доната"""
+        return int(self.value.split('$')[-1])
+
 
 status_list = [
     DonateStatus.BASE,

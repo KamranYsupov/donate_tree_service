@@ -44,6 +44,7 @@ class DonateService:
         elif donate_sum == 10000:
             return DonateStatus.BRILLIANT
 
+
     @staticmethod
     def _extend_donations_data(data: dict, sponsor: TelegramUser, donate: int | float):
         if data.get(sponsor):
@@ -162,8 +163,8 @@ class DonateService:
                     donations_data,
                 )
 
-            if not (int(status.value.split('$')[-1])
-                    <= int(next_sponsor.status.value.split('$')[-1])):
+            if not (int(status.get_status_donate_value())
+                    <= int(next_sponsor.status.get_status_donate_value())):
                 user_to_add = next_sponsor
                 continue
 
