@@ -14,8 +14,7 @@ from app.services.telegram_user_service import TelegramUserService
 from app.schemas.matrix import MatrixEntity
 from app.utils.matrix import get_matrices_length
 from app.utils.matrix import find_first_level_matrix_id
-
-from utils.sponsor import check_telegram_user_status
+from app.utils.sponsor import check_telegram_user_status
 
 
 class DonateService:

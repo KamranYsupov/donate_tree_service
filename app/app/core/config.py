@@ -62,6 +62,11 @@ class Settings(BaseSettings):
 
     database_url: PostgresDsn | None = Field(title="Ссылка БД", default=None)
 
+    donate_confirmation_time_minutes: int = Field(
+        title="Время на подтверждение доната в минутах",
+        default=15,
+    )
+
     @computed_field
     @property
     def postgres_url(self) -> PostgresDsn:

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 import uuid
 
 import loguru
@@ -23,13 +23,13 @@ from app.models.telegram_user import DonateStatus
 from app.core.config import settings
 from app.services.matrix_service import MatrixService
 from app.schemas.matrix import MatrixEntity
-from app.utils.sponsor import send_donations_keyboard
 from app.keyboards.donate import get_donations_keyboard
 from app.db.commit_decorator import commit_and_close_session
 from app.keyboards.reply import get_reply_keyboard
 from app.utils.pagination import Paginator
 from app.utils.sort import get_reversed_dict
 from app.utils.sponsor import check_telegram_user_status
+from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
 
 donate_router = Router()
 
@@ -220,6 +220,9 @@ async def donations_menu_handler(
 async def confirm_donate(
         callback: CallbackQuery,
 ) -> None:
+    if "🔴" in callback.data.split("_"):
+        return
+
     callback_donate_data = "_".join(callback.data.split("_")[1:])
     donate_sum = callback_donate_data.split("_")[-1]
 
@@ -256,16 +259,6 @@ async def donate_handler(
     current_user = await telegram_user_service.get_telegram_user(
         user_id=callback.from_user.id
     )
-
-    if status.value == current_user.status.value and status.value != DonateStatus.BRILLIANT.value:
-        return await send_donations_keyboard(
-            message=callback.message,
-            current_status=donate_service.get_donate_status(donate_sum),
-            edit_text=True,
-        )
-
-    if "🔴" in callback.data.split("_"):
-        return
 
     if not callback.from_user.username:
         await callback.message.edit_text(
@@ -306,50 +299,20 @@ async def donate_handler(
         matrix_id=matrix.id,
         quantity=donate_sum,
     )
+
+    now = datetime.now()
+    eta = now + timedelta(minutes=settings.donate_confirmation_time_minutes)
+
+    check_is_donate_confirmed_or_delete_donate_task.apply_async(
+        kwargs={
+            "donate_id": donate.id,
+            "donate_sender_user_id": current_user.user_id,
+    },
+        eta=eta
+    )
     transactions = await donate_confirm_service.get_donate_transactions_by_donate_id(
         donate_id=donate.id
     )
-
-    ### autoconfirm
-
-    transaction = transactions[0]
-    transaction = await donate_confirm_service.set_donate_transaction_is_confirmed(
-        donate_transaction_id=transaction.id
-    )
-    sponsor = await telegram_user_service.get_telegram_user(id=transaction.sponsor_id)
-    sponsor.bill += transaction.quantity
-    sender_user = await telegram_user_service.get_telegram_user(
-        id=donate.telegram_user_id
-    )
-    donate_confirm = await donate_confirm_service.check_donate_is_confirmed(
-        donate_id=transaction.donate_id
-    )
-    await callback.message.answer(f'{donate_confirm}')
-
-    if donate_confirm:
-        current_matrix_id = donate.matrix_id
-        current_matrix = await matrix_service.get_matrix(id=current_matrix_id)
-
-        sender_matrix_dict = {"owner_id": sender_user.id, "status": current_matrix.status}
-        sender_matrix_entity = MatrixEntity(**sender_matrix_dict)
-        sender_matrix = await matrix_service.create_matrix(matrix=sender_matrix_entity)
-
-        await matrix_service.add_to_matrix(current_matrix, sender_matrix, sender_user)
-
-        if check_telegram_user_status(sender_user, current_matrix.status):
-            sender_user.status = current_matrix.status
-
-        try:
-            await callback.bot.send_message(
-                text=f"Ваш донат успешно подтвержден!\n",
-                chat_id=sender_user.user_id,
-                reply_markup=get_reply_keyboard(sender_user),
-            )
-        except Exception:
-            pass
-
-    return
-    ###
 
     message = (
         f"Вы собираетесь отправить донат в размере {donate_sum}$.\n\n"
@@ -362,7 +325,7 @@ async def donate_handler(
             id=transaction.sponsor_id
         )
         message += f"{int(transaction.quantity)}$ пользователю @{sponsor.username}\n"
-        # блок отправки сообщений спорсорам
+        # блок отправки сообщений спонсорам
         try:
             await callback.bot.send_message(
                 text=f"Вам донат от @{current_user.username} в размере {int(transaction.quantity)}$\n"
@@ -381,8 +344,22 @@ async def donate_handler(
 
 @donate_router.callback_query(F.data.startswith("first_"))
 @inject
-async def first_confirm_handler(callback: CallbackQuery) -> None:
+async def first_confirm_handler(
+        callback: CallbackQuery,
+        donate_confirm_service: DonateConfirmService = Provide[
+            Container.donate_confirm_service
+        ],
+) -> None:
     transaction_id = get_callback_value(callback.data)
+    transaction = await donate_confirm_service.get_donate_transaction_by_id(
+        transaction_id
+    )
+
+    if transaction is None:
+        await callback.message.edit_text(
+            'Время подтверждения транзакции вышло.'
+        )
+        return
 
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",

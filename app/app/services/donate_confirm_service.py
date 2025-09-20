@@ -29,8 +29,6 @@ class DonateConfirmService:
         quantity: float,
     ):
         """Создание сущности доната"""
-        # user = self._repository_telegram_user.get(user_id=user_id)
-        # amount = sum(donate_data.values())
         donate_dict = {
             "telegram_user_id": telegram_user_id,
             "quantity": quantity,
@@ -93,7 +91,6 @@ class DonateConfirmService:
         return output_dict
 
     async def get_donate_transactions_by_donate_id(self, donate_id: uuid.UUID):
-        """Получить сп"""
         return self._repository_donate_transaction.list(
             donate_id=donate_id, is_confirmed=False
         )
@@ -141,3 +138,8 @@ class DonateConfirmService:
             obj_id=donate_transaction.id, obj_in={"is_confirmed": True}
         )
         return donate_transaction
+
+    async def delete_donate_with_transactions(self, donate_id: uuid.UUID):
+        self._repository_donate.delete_donate_with_transactions(
+            donate_id=donate_id
+        )

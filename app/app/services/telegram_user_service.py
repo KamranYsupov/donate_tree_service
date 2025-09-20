@@ -4,8 +4,7 @@ from typing import Tuple, Any
 from app.repositories.telegram_user import RepositoryTelegramUser
 from app.models.telegram_user import TelegramUser
 from app.schemas.telegram_user import TelegramUserEntity
-
-from models.matrix import Matrix
+from app.models.matrix import Matrix
 
 
 class TelegramUserService:

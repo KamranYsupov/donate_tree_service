@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 
 from app.models.telegram_user import TelegramUser, DonateStatus
@@ -24,6 +24,21 @@ class RepositoryDonate(RepositoryBase[Donate]):
         ).order_by(Donate.created_at.desc())
 
         return self._session.execute(statement).scalars().all()
+
+    def delete_donate_with_transactions(self, donate_id: uuid.UUID):
+        delete_transactions_statement = (
+            delete(DonateTransaction)
+            .where(DonateTransaction.donate_id == donate_id)
+        )
+
+        delete_donate_statement = (
+            delete(Donate)
+            .where(Donate.id == donate_id)
+        )
+
+        self._session.execute(delete_transactions_statement)
+        self._session.execute(delete_donate_statement)
+
 
 
 class RepositoryDonateTransaction(RepositoryBase[DonateTransaction]):

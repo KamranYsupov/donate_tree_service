@@ -22,8 +22,8 @@ flask-login = "^0.6.3"
 watchdog = "^3.0.0"
 aiogram-tonconnect = "^0.13.5"
 redis = "^5.0.4"
-celery = "^5.5.3"
 gevent = "^25.9.1"
+celery = "^5.5.3"
 
 
 [build-system]

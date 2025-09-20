@@ -7,6 +7,6 @@ app = Celery(
     backend=settings.celery_backend_url,
     broker=settings.celery_broker_url,
 )
-app.autodiscover_tasks()
+app.autodiscover_tasks(["app.tasks"])
 
-app.conf.timezone = 'Europe/Moscow'
+app.conf.timezone = "Europe/Moscow"

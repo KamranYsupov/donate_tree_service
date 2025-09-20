@@ -19,20 +19,5 @@ def check_telegram_user_status(telegram_user: TelegramUser, status: DonateStatus
     return expression
 
 
-async def send_donations_keyboard(
-    message: Message,
-    current_status: DonateStatus,
-    edit_text: bool = False,
-) -> None:
-    """Функция для отправки клавиатуры донатов"""
-    message_data = dict(
-        parse_mode="HTML",
-        text=f"Вы не можете выбрать <b>{current_status.value}</b> повторно",
-        reply_markup=get_donate_keyboard(buttons={"🔙 Назад": "donations"}),
-    )
-    if edit_text:
-        await message.edit_text(**message_data)
-    else:
-        await message.answer(**message_data)
 
 

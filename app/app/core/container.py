@@ -27,6 +27,7 @@ class Container(containers.DeclarativeContainer):
             "app.handlers.donate",
             "app.handlers.start",
             "app.handlers.info",
+            "app.tasks.donate",
         ]
     )
 
