@@ -2,6 +2,7 @@ import math
 import uuid
 from typing import Tuple, Any
 
+import loguru
 from app.repositories.telegram_user import RepositoryTelegramUser
 from app.repositories.donate import RepositoryDonate, RepositoryDonateTransaction
 from app.models.telegram_user import TelegramUser
@@ -79,12 +80,12 @@ class DonateConfirmService:
 
     async def get_all_my_donates_and_transactions(self, telegram_user_id: uuid.UUID):
         """Получить все свои отправленные донаты в виде словаря {донат: транзакции доната}"""
-        donates = await self.get_donate_by_telegram_user_id(
-            telegram_user_id=telegram_user_id
+        donates = self._repository_donate.get_donates_list(
+            telegram_user_id=telegram_user_id,
         )
         output_dict = {}
         for donate in donates:
-            donate_transactions = await self.get_donate_transactions_by_donate_id(
+            donate_transactions = self._repository_donate_transaction.list(
                 donate_id=donate.id
             )
             output_dict[donate] = donate_transactions
@@ -96,10 +97,11 @@ class DonateConfirmService:
         )
 
     async def get_all_donates_and_transactions(self):
+        """Получить все свои отправленные донаты в виде словаря {донат: транзакции доната}"""
         donates = self._repository_donate.get_donates_list()
         output_dict = {}
         for donate in donates:
-            donate_transactions = await self.get_donate_transactions_by_donate_id(
+            donate_transactions = self._repository_donate_transaction.list(
                 donate_id=donate.id
             )
             output_dict[donate] = donate_transactions

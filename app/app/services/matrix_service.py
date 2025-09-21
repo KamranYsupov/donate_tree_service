@@ -95,7 +95,7 @@ class MatrixService:
 
             for matrix in matrices:
                 message += (
-                    f"<b>Матрица {matrix.id.hex[0:5]}: {matrix.status.value}</b>\n\n"
+                    f"<b>Стол {matrix.id.hex[0:5]}: {matrix.status.value}</b>\n\n"
                 )
 
                 first_level_usernames, second_level_usernames, length = get_my_team_telegram_usernames(matrix)
@@ -118,7 +118,7 @@ class MatrixService:
                     f"\nВсего участников: <b>{length}</b>\n\n"
                 )
         else:
-            message += "У вас нет активированных матриц"
+            message += "У вас нет активированных столов"
 
         if paginator.has_previous():
             buttons |= {"◀ Пред.": f"team_{page_number - 1}"}

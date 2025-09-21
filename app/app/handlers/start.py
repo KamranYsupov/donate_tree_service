@@ -154,7 +154,7 @@ async def add_fake_user(
 
     await message.answer(
         f"✅ пользователь {fake_user.username} успешно добавлен в {current_matrix.id}!\n"
-        f"Статус матрицы: <b>{current_matrix.status.value}</b>\n"
+        f"Статус стола: <b>{current_matrix.status.value}</b>\n"
         f"{settings.bot_link}?start={fake_user.user_id}",
         parse_mode="HTML",
     )
@@ -226,7 +226,7 @@ async def add_fake_user(
 
     await message.answer(
         f"✅ пользователь {fake_user.username} успешно добавлен в {admin_matrix.id}!\n"
-        f"Статус матрицы: <b>{admin_matrix.status.value}</b>\n"
+        f"Статус стола: <b>{admin_matrix.status.value}</b>\n"
         f"{settings.bot_link}?start={fake_user.user_id}",
         parse_mode="HTML",
     )

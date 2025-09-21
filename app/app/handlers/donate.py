@@ -87,7 +87,7 @@ async def subscription_checker(
     await callback.answer("Ты не подписался ❌", show_alert=True)
 
 
-@donate_router.message(F.text.casefold() == "донаты 💸")
+@donate_router.message(F.text == "💰 МОИ СТОЛЫ 💰")
 @inject
 async def donations_menu_handler(
         message: Message,
@@ -106,7 +106,7 @@ async def donations_menu_handler(
     if current_user.is_admin:
         message_text = (
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-            f"Получено донатов: <b>{int(current_user.bill)}$</b>\n"
+            f"Получено подарков: <b>${int(current_user.bill)}</b>\n"
         )
         await message.answer(
             text=message_text,
@@ -131,11 +131,11 @@ async def donations_menu_handler(
                 + "\n"
                   f"Мой статус: <b>{current_user.status.value}</b>\n"
                   f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-                  f"Получено донатов: {current_user.bill} <b>$</b>\n"
+                  f"Получено подарков: <b>$</b>{current_user.bill} \n"
         )
     else:
         message_text = (
-            "Возможность отправки следующего доната будет "
+            "Возможность отправки следующего подарка будет "
             "доступна только после подтверждения текущего"
         )
 
@@ -169,7 +169,7 @@ async def donations_menu_handler(
     if current_user.is_admin:
         message_text = (
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-            f"Получено донатов: {current_user.bill} <b>$</b>\n"
+            f"Получено подарков: <b>$</b>{current_user.bill}\n"
         )
 
         await callback.message.edit_text(
@@ -195,11 +195,11 @@ async def donations_menu_handler(
                 + "\n"
                   f"Мой статус: <b>{current_user.status.value}</b>\n"
                   f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-                  f"Получено донатов: {current_user.bill} <b>$</b>\n"
+                  f"Получено подарков: <b>$</b>{current_user.bill}\n"
         )
     else:
         message_text = (
-            "Возможность отправки следующего доната будет "
+            "Возможность отправки следующего подарка будет "
             "доступна только после подтверждения текущего"
         )
 
@@ -227,7 +227,7 @@ async def confirm_donate(
     donate_sum = callback_donate_data.split("_")[-1]
 
     await callback.message.edit_text(
-        text=f"Для завершения действия, Вам необходимо отправить донат {donate_sum}$ в течение 15 минут. \n\n"
+        text=f"Для завершения действия, Вам необходимо отправить подарок ${donate_sum} в течение 15 минут. \n\n"
              "<b>Вы согласны продолжить?</b>",
         parse_mode="HTML",
         reply_markup=get_donate_keyboard(
@@ -262,7 +262,7 @@ async def donate_handler(
 
     if not callback.from_user.username:
         await callback.message.edit_text(
-            "Перед отправкой доната, добавьте пожалуйста <em>username</em> в свой телеграм аккаунт"
+            "Перед отправкой подарка, добавьте пожалуйста <em>username</em> в свой телеграм аккаунт"
         )
         return
 
@@ -274,7 +274,7 @@ async def donate_handler(
     )
     if all_donates:
         message_text = (
-            "Возможность отправки следующего доната будет "
+            "Возможность отправки следующего подарка будет "
             "доступна только после подтверждения текущего"
         )
         await callback.message.edit_text(
@@ -315,24 +315,24 @@ async def donate_handler(
     )
 
     message = (
-        f"Вы собираетесь отправить донат в размере {donate_sum}$.\n\n"
+        f"Вы собираетесь отправить подарок в размере ${donate_sum}.\n\n"
         f"Для этого свяжитесь с каждым пользователем из списка, "
-        f"возьмите их реквизиты, отправьте перевод и запросите подтверждение доната:\n\n"
+        f"возьмите их реквизиты, отправьте перевод и запросите подтверждение подарка:\n\n"
     )
 
     for transaction in transactions:
         sponsor = await telegram_user_service.get_telegram_user(
             id=transaction.sponsor_id
         )
-        message += f"{int(transaction.quantity)}$ пользователю @{sponsor.username}\n"
+        message += f"${int(transaction.quantity)} пользователю @{sponsor.username}\n"
         # блок отправки сообщений спонсорам
         try:
             await callback.bot.send_message(
-                text=f"Вам донат от @{current_user.username} в размере {int(transaction.quantity)}$\n"
-                     f'Нажмите "Подтвердить донат" после получения доната\n',
+                text=f"Вам подарок от @{current_user.username} в размере ${int(transaction.quantity)}\n"
+                     f'Нажмите "Подтвердить подарок" после получения подарка\n',
                 chat_id=sponsor.user_id,
                 reply_markup=get_donate_keyboard(
-                    buttons={"Подтвердить донат": f"first_{transaction.id}"}
+                    buttons={"Подтвердить подарок": f"first_{transaction.id}"}
                 ),
             )
         except Exception:
@@ -434,10 +434,10 @@ async def cancel_confirm(
     )
 
     await callback.message.edit_text(
-        text=f"Вам донат от @{telegram_user.username} в размере {int(transaction.quantity)}$\n"
-             f'Нажмите "Подтвердить донат" после получения доната\n',
+        text=f"Вам подарок от @{telegram_user.username} в размере ${int(transaction.quantity)}\n"
+             f'Нажмите "Подтвердить подарок" после получения подарка\n',
         reply_markup=get_donate_keyboard(
-            buttons={"Подтвердить донат": f"first_{transaction.id}"}
+            buttons={"Подтвердить подарок": f"first_{transaction.id}"}
         ),
     )
 
@@ -462,7 +462,7 @@ async def get_transactions_menu(
     buttons["🔙 Назад"] = "donations"
 
     await callback.message.edit_text(
-        "В этом разделе вы можете посмотреть информацию о подтверждении транзакций по донатам.\n"
+        "В этом разделе вы можете посмотреть информацию о подтверждении транзакций по подаркам.\n"
         "Выберете раздел:",
         reply_markup=get_donate_keyboard(buttons=buttons),
     )
@@ -512,14 +512,14 @@ async def get_transactions_list_to_me(
             )
             message += (
                 f"ID: {transaction.id}\n"
-                f"Сумма: {int(transaction.quantity)}$\n"
+                f"Сумма: ${int(transaction.quantity)}\n"
                 f"От: @{user.username}\n"
                 f"Дата: {transaction.created_at}\n"
             )
             if transaction.is_confirmed:
                 message += f"Подтверждена: Да\n\n"
             else:
-                message += f"Подтверждена: Нет\n\n"
+                message += f"Подтверждена: <b>Нет</b>\n\n"
             if not transaction.is_confirmed:
                 buttons[f"Подтвердить {transaction.id}"] = (
                     f"firsttran_{page_number}_{transaction.id}"
@@ -561,39 +561,29 @@ async def get_transactions_list_from_me(
     paginator = Paginator(list(donates.items()), page_number=page_number, per_page=3)
     buttons = {}
     sizes = (1, 1)
-    message = "<b><u>Ваши донаты и транзакции</u></b>\n\n"
+    message = "<b><u>Ваши подарки и транзакции</u></b>\n\n"
 
     donates = paginator.get_page()
     if donates:
         for donate, transactions in donates:
             message += (
-                f"<b><u>Донат на сумму: {int(donate.quantity)}$</u></b>\n"
+                f"<b><u>Подарок на сумму: ${int(donate.quantity)}</u></b>\n"
+                f"ID: {donate.id}\n"
                 f"Дата: {donate.created_at}\n"
             )
             if donate.is_confirmed:
-                message += f"Подтвержден: Да\n\n"
+                message += f"Подтвержден: Да\n"
             else:
-                message += f"Подтвержден: Нет\n\n"
+                message += f"Подтвержден: <b>Нет</b>\n"
 
-            message += f"<u>Транзакции по донату</u>:\n\n"
             if transactions:
                 for transaction in transactions:
                     sponsor = await telegram_user_service.get_telegram_user(
                         id=transaction.sponsor_id
                     )
-                    message += (
-                        f"ID: {transaction.id}\n"
-                        f"Сумма: {int(transaction.quantity)}$\n"
-                        f"Кому: @{sponsor.username}\n"
-                    )
-                    if transaction.is_confirmed:
-                        message += f"Подтверждена: Да\n\n"
-                    else:
-                        message += f"Подтверждена: Нет\n\n"
-            else:
-                message += "Нет неподтвержденных транзакций по донату.\n\n"
+                    message += f"Кому: @{sponsor.username}\n\n"
     else:
-        message = "У Вас нет неподтвержденных донатов"
+        message = "У Вас нет подарков"
 
     if paginator.has_previous():
         buttons |= {"◀ Пред.": f"transactions_from_me_{page_number - 1}"}
@@ -633,7 +623,7 @@ async def get_all_transactions(
     )
     buttons = {}
     sizes = (1, 1)
-    message = "Все донаты и транзакции\n\n"
+    message = "Все подарки и транзакции\n\n"
     donates_and_transactions = paginator.get_page()
 
     if paginator.has_previous():
@@ -650,29 +640,25 @@ async def get_all_transactions(
                 id=donate.telegram_user_id
             )
             message += (
-                f"<b><u>Донат на сумму: {int(donate.quantity)}$</u></b>\n"
-                f"Дата: {donate.created_at}\n"
+                f"<b><u>Подарок на сумму: ${int(donate.quantity)}</u></b>\n"
+                f"ID: {donate.id}\n"
+                f"Дата: {donate.created_at}\n\n"
             )
-            if donate.is_confirmed:
-                message += f"Подтвержден: Да\n\n"
-            else:
-                message += f"Подтвержден: Нет\n\n"
             if transactions:
-                message += f"<u>Транзакции по донату</u>:\n\n"
                 for transaction in transactions:
                     sponsor = await telegram_user_service.get_telegram_user(
                         id=transaction.sponsor_id
                     )
                     message += (
                         f"ID: {transaction.id}\n"
-                        f"Сумма: {int(transaction.quantity)}$\n"
+                        f"Сумма: ${int(transaction.quantity)}\n"
                         f"От кого: @{user.username}\n"
                         f"Кому: @{sponsor.username}\n"
                     )
                     if transaction.is_confirmed:
                         message += f"Подтверждена: Да\n\n"
                     else:
-                        message += f"Подтверждена: Нет\n\n"
+                        message += f"Подтверждена: <b>Нет</b>\n\n"
                         buttons[f"Подтвердить {transaction.id}"] = (
                             f"firstadmin_{page_number}_{transaction.id}"
                         )
@@ -739,15 +725,15 @@ async def confirm_transaction(
 
         try:
             await callback.bot.send_message(
-                text=f"Ваш донат успешно подтвержден!\n",
+                text=f"Ваш подарок успешно подтвержден!\n",
                 chat_id=sender_user.user_id,
                 reply_markup=get_reply_keyboard(sender_user),
             )
         except Exception:
             pass
 
-    message = (f"Транзакция на сумму {int(transaction.quantity)}"
-               f"$ от пользователя @{sender_user.username} подтверждена.")
+    message = (f"Транзакция на сумму ${int(transaction.quantity)} "
+               f"от пользователя @{sender_user.username} подтверждена.")
     await callback.message.edit_text(
         message, reply_markup=get_donate_keyboard(buttons={"🔙 Назад": "transactions"})
     )
@@ -819,15 +805,15 @@ async def confirm_admin_transaction(
 
         try:
             await callback.bot.send_message(
-                text=f"Ваш донат успешно подтвержден!\n",
+                text=f"Ваш подарок успешно подтвержден!\n",
                 chat_id=sender_user.user_id,
                 reply_markup=get_reply_keyboard(sender_user),
             )
         except Exception:
             pass
 
-    message = (f"Транзакция на сумму {int(transaction.quantity)}"
-               f"$ от пользователя @{sender_user.username} подтверждена.")
+    message = (f"Транзакция на сумму ${int(transaction.quantity)} "
+               f"от пользователя @{sender_user.username} подтверждена.")
     await callback.message.edit_text(
         message, reply_markup=get_donate_keyboard(buttons={"🔙 Назад": "transactions"})
     )

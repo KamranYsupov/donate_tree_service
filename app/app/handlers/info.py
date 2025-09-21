@@ -15,7 +15,7 @@ from app.utils.pagination import Paginator
 info_router = Router()
 
 
-@info_router.message(F.text.casefold() == "baza 🌍")
+@info_router.message(F.text == "🎁 GIFT MAFIA 🎁")
 @inject
 async def about_handler(
         message: Message,
@@ -25,15 +25,15 @@ async def about_handler(
     presentation_keyboard = InlineKeyboardBuilder()
     presentation_button = InlineKeyboardButton(
         text="Презентация 📑",
-        url="https://telegra.ph/BASE-MLM-PRESENTATION-06-21"
+        url="https://telegra.ph/Gift-MAFIA-09-17"
     )
     presentation_keyboard.add(presentation_button)
 
     await message.answer_photo(
         photo=base_photo,
-        caption="МЛМ БАЗА\n\n"
+        caption="GIFT Mafia\n\n"
                 "Бизнес-клуб, в котором сетевые предприниматели знакомятся, общаются, "
-                "обмениваются опытом и отправляют друг другу донаты.",
+                "обмениваются опытом и отправляют друг другу подарки.",
         reply_markup=presentation_keyboard.adjust(1).as_markup(),
     )
 
@@ -155,7 +155,7 @@ async def referral_handler(
     return message_text, reply_markup
 
 
-@info_router.message(F.text.casefold() == "реферальная ссылка 🔗")
+@info_router.message(F.text == "👫 ПРИГЛАСИТЬ ДРУЗЕЙ 👫")
 @inject
 async def referral_message_handler(
         message: Message,

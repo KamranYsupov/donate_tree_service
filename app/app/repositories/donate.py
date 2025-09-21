@@ -11,8 +11,13 @@ from app.models.donate import Donate, DonateTransaction
 class RepositoryDonate(RepositoryBase[Donate]):
     """Репозиторий доната"""
 
-    def get_donates_list(self):
-        statement = select(Donate).order_by(Donate.created_at.desc())
+    def get_donates_list(self, *args, **kwargs):
+        statement = (
+            select(Donate)
+            .filter(*args)
+            .filter_by(**kwargs)
+            .order_by(Donate.created_at.desc())
+        )
 
         return self._session.execute(statement).scalars().all()
 
