@@ -1,5 +1,6 @@
+import loguru
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton
 from dependency_injector.wiring import inject, Provide
 
@@ -9,6 +10,7 @@ from app.keyboards.donate import get_donate_keyboard
 from app.core.config import settings
 from app.services.matrix_service import MatrixService
 from app.utils.sponsor import get_callback_value
+from app.utils.pagination import Paginator
 
 info_router = Router()
 
@@ -114,11 +116,87 @@ async def chain_handler(
     )
 
 
-@info_router.message(F.text.casefold() == "реферальная ссылка 🔗")
 @inject
 async def referral_handler(
+        from_user_id: int,
+        page_number=1,
+        per_page=20,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+) -> tuple[str, InlineKeyboardMarkup]:
+    invited_users = await telegram_user_service.get_invited_users(
+        sponsor_user_id=from_user_id
+    )
+
+    paginator = Paginator(
+        invited_users,
+        page_number=page_number,
+        per_page=per_page
+    )
+    buttons = {}
+    message_text = f"<b>Ваши рефералы (страница {page_number}):</b>\n\n"
+
+    if paginator.has_previous():
+        buttons |= {"◀ Пред.": f"referrals_{page_number - 1}"}
+    if paginator.has_next():
+        buttons |= {"След. ▶": f"referrals_{page_number + 1}"}
+
+    start_count = per_page * page_number - per_page + 1
+    for user in paginator.get_page():
+        message_text += f"{start_count}. @{user.username}\n"
+        start_count += 1
+
+    reply_markup = get_donate_keyboard(
+        buttons=buttons,
+        sizes=(2,)
+    )
+
+    return message_text, reply_markup
+
+
+@info_router.message(F.text.casefold() == "реферальная ссылка 🔗")
+@inject
+async def referral_message_handler(
         message: Message,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
 ) -> None:
+    current_user = await telegram_user_service.get_telegram_user(
+        user_id=message.from_user.id
+    )
+    if not current_user:
+        return
+
+    message_text, reply_markup = await referral_handler(current_user.user_id)
+
     await message.answer(
-        f"Ваша реферальная ссылка: {settings.bot_link}?start={message.from_user.id}",
+        text=message_text,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+    await message.answer(
+        f"Ваша реферальная ссылка: {settings.bot_link}?start={current_user.user_id}",
+    )
+
+
+@info_router.callback_query(F.data.startswith("referrals_"))
+@inject
+async def referral_callback_handler(
+        callback: CallbackQuery,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+) -> None:
+    page_number = int(callback.data.split('_')[-1])
+    message_text, reply_markup = await referral_handler(
+        callback.from_user.id,
+        page_number=page_number
+    )
+
+    await callback.message.edit_text(
+        text=message_text,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
     )

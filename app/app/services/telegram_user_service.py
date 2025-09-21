@@ -12,8 +12,8 @@ class TelegramUserService:
     def __init__(self, repository_telegram_user: RepositoryTelegramUser) -> None:
         self._repository_telegram_user = repository_telegram_user
 
-    async def get_list(self) -> list[TelegramUser]:
-        return self._repository_telegram_user.list()
+    async def get_list(self, *args, **kwargs) -> list[TelegramUser]:
+        return self._repository_telegram_user.list(*args, **kwargs)
 
     async def get_telegram_user(self, **kwargs) -> TelegramUser:
         return self._repository_telegram_user.get(**kwargs)
@@ -57,4 +57,13 @@ class TelegramUserService:
     async def get_sponsors_for_separating_donate(self, user_id: int):
         return self._repository_telegram_user.get_sponsors_for_separating_donate(
             user_id=user_id
+        )
+
+    async def get_invited_users(
+            self,
+            sponsor_user_id: int
+    ):
+        """Получение списка всех приглашенных пользователей"""
+        return self._repository_telegram_user.get_invited_users(
+            sponsor_user_id=sponsor_user_id
         )

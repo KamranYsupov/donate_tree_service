@@ -8,6 +8,19 @@ from app.models.telegram_user import TelegramUser
 class RepositoryTelegramUser(RepositoryBase[TelegramUser]):
     """Репозиторий телеграм пользователя"""
 
+    def get_invited_users(
+            self,
+            sponsor_user_id: int
+    ):
+        """Получение списка всех приглашенных пользователей"""
+        statement = (
+            select(TelegramUser)
+            .filter_by(sponsor_user_id=sponsor_user_id)
+            .order_by(TelegramUser.created_at)
+        )
+
+        return self._session.execute(statement).scalars().all()
+
     def get_telegram_user_sponsors(
         self, user_id: int
     ) -> tuple[TelegramUser, TelegramUser, TelegramUser]:
