@@ -389,6 +389,22 @@ async def first_admin_confirm_handler(
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
 
+    transaction = await donate_confirm_service.get_donate_transaction_by_id(
+        transaction_id
+    )
+
+    if transaction.is_canceled:
+        await callback.message.edit_text(
+            'Время подтверждения транзакции вышло.',
+            reply_markup=get_donate_keyboard(
+                buttons={
+                    "🔙 Назад ": f"all_transactions_{page_number}",
+                },
+                sizes=(1,),
+            ),
+        )
+        return
+
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
         parse_mode="HTML",
@@ -412,6 +428,22 @@ async def first_transactions_confirm_handler(
 ) -> None:
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
+
+    transaction = await donate_confirm_service.get_donate_transaction_by_id(
+        transaction_id
+    )
+
+    if transaction.is_canceled:
+        await callback.message.edit_text(
+            'Время подтверждения транзакции вышло.',
+            reply_markup=get_donate_keyboard(
+                buttons={
+                    "🔙 Назад ": f"transactions_to_me_{page_number}",
+                },
+                sizes=(1,),
+            ),
+        )
+        return
 
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
