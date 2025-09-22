@@ -82,6 +82,10 @@ async def subscription_checker(
         await callback.message.answer(
             "✅ Готово! Выбери сервис", reply_markup=get_reply_keyboard(current_user)
         )
+        await callback.bot.send_message(
+            chat_id=sponsor.user_id,
+            text=f"По вашей ссылке зарегистрировался пользователь @{current_user.username}."
+        )
         return
 
     await callback.answer("Ты не подписался ❌", show_alert=True)
@@ -376,9 +380,30 @@ async def first_confirm_handler(
 
 @donate_router.callback_query(F.data.startswith("firstadmin_"))
 @inject
-async def first_admin_confirm_handler(callback: CallbackQuery) -> None:
+async def first_admin_confirm_handler(
+        callback: CallbackQuery,
+        donate_confirm_service: DonateConfirmService = Provide[
+            Container.donate_confirm_service
+        ],
+) -> None:
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
+
+    transaction = await donate_confirm_service.get_donate_transaction_by_id(
+        transaction_id
+    )
+
+    if transaction is None:
+        await callback.message.edit_text(
+            'Время подтверждения транзакции вышло.',
+            reply_markup=get_donate_keyboard(
+                buttons={
+                    "🔙 Назад ": f"all_transactions_{page_number}",
+                },
+                sizes=(1,),
+            ),
+        )
+        return
 
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
@@ -395,9 +420,30 @@ async def first_admin_confirm_handler(callback: CallbackQuery) -> None:
 
 @donate_router.callback_query(F.data.startswith("firsttran_"))
 @inject
-async def first_transactions_confirm_handler(callback: CallbackQuery) -> None:
+async def first_transactions_confirm_handler(
+        callback: CallbackQuery,
+        donate_confirm_service: DonateConfirmService = Provide[
+            Container.donate_confirm_service
+        ],
+) -> None:
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
+
+    transaction = await donate_confirm_service.get_donate_transaction_by_id(
+        transaction_id
+    )
+
+    if transaction is None:
+        await callback.message.edit_text(
+            'Время подтверждения транзакции вышло.',
+            reply_markup=get_donate_keyboard(
+                buttons={
+                    "🔙 Назад ": f"transactions_to_me_{page_number}",
+                },
+                sizes=(1,),
+            ),
+        )
+        return
 
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
