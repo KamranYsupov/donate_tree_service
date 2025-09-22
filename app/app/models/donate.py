@@ -37,6 +37,10 @@ class Donate(UUIDMixin, TimestampedMixin, Base):
         Boolean,
         default=False,
     )
+    is_canceled = Column(
+        Boolean,
+        default=False
+    )
     matrix_id = Column(
         UUID(as_uuid=True),
         ForeignKey("matrices.id"),
@@ -71,6 +75,10 @@ class DonateTransaction(UUIDMixin, TimestampedMixin, Base):
     is_confirmed = Column(
         Boolean,
         default=False,
+    )
+    is_canceled = Column(
+        Boolean,
+        default=False
     )
 
     __table_args__ = {"extend_existing": True}

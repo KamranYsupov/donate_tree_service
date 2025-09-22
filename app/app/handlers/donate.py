@@ -359,7 +359,7 @@ async def first_confirm_handler(
         transaction_id
     )
 
-    if transaction is None:
+    if transaction.is_canceled:
         await callback.message.edit_text(
             'Время подтверждения транзакции вышло.'
         )
@@ -389,22 +389,6 @@ async def first_admin_confirm_handler(
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
 
-    transaction = await donate_confirm_service.get_donate_transaction_by_id(
-        transaction_id
-    )
-
-    if transaction is None:
-        await callback.message.edit_text(
-            'Время подтверждения транзакции вышло.',
-            reply_markup=get_donate_keyboard(
-                buttons={
-                    "🔙 Назад ": f"all_transactions_{page_number}",
-                },
-                sizes=(1,),
-            ),
-        )
-        return
-
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
         parse_mode="HTML",
@@ -428,22 +412,6 @@ async def first_transactions_confirm_handler(
 ) -> None:
     transaction_id = get_callback_value(callback.data)
     page_number = callback.data.split("_")[-2]
-
-    transaction = await donate_confirm_service.get_donate_transaction_by_id(
-        transaction_id
-    )
-
-    if transaction is None:
-        await callback.message.edit_text(
-            'Время подтверждения транзакции вышло.',
-            reply_markup=get_donate_keyboard(
-                buttons={
-                    "🔙 Назад ": f"transactions_to_me_{page_number}",
-                },
-                sizes=(1,),
-            ),
-        )
-        return
 
     await callback.message.edit_text(
         text="<b>Вы уверены?</b>",
@@ -562,11 +530,13 @@ async def get_transactions_list_to_me(
                 f"От: @{user.username}\n"
                 f"Дата: {transaction.created_at}\n"
             )
-            if transaction.is_confirmed:
-                message += f"Подтверждена: Да\n\n"
-            else:
-                message += f"Подтверждена: <b>Нет</b>\n\n"
-            if not transaction.is_confirmed:
+            message += "<b>ОТМЕНЕНА ❌</b>\n" if transaction.is_canceled else ''
+            message += (
+                "Подтверждена: " +
+                ("Да" if transaction.is_confirmed else "<b>Нет</b>") +
+                "\n\n"
+            )
+            if not transaction.is_confirmed and not transaction.is_canceled:
                 buttons[f"Подтвердить {transaction.id}"] = (
                     f"firsttran_{page_number}_{transaction.id}"
                 )
@@ -617,10 +587,12 @@ async def get_transactions_list_from_me(
                 f"ID: {donate.id}\n"
                 f"Дата: {donate.created_at}\n"
             )
-            if donate.is_confirmed:
-                message += f"Подтвержден: Да\n"
-            else:
-                message += f"Подтвержден: <b>Нет</b>\n"
+            message += "<b>ОТМЕНЕН ❌</b>\n" if donate.is_canceled else ''
+            message += (
+                "Подтвержден: " +
+                ("Да" if donate.is_confirmed else "<b>Нет</b>") +
+                "\n\n"
+            )
 
             if transactions:
                 for transaction in transactions:
@@ -688,8 +660,10 @@ async def get_all_transactions(
             message += (
                 f"<b><u>Подарок на сумму: ${int(donate.quantity)}</u></b>\n"
                 f"ID: {donate.id}\n"
-                f"Дата: {donate.created_at}\n\n"
+                f"Дата: {donate.created_at}\n"
             )
+            message += "<b>ОТМЕНЕН ❌</b>\n\n" if donate.is_canceled else ''
+            message += "Транзакции по подарку: \n\n"
             if transactions:
                 for transaction in transactions:
                     sponsor = await telegram_user_service.get_telegram_user(
@@ -701,10 +675,12 @@ async def get_all_transactions(
                         f"От кого: @{user.username}\n"
                         f"Кому: @{sponsor.username}\n"
                     )
-                    if transaction.is_confirmed:
-                        message += f"Подтверждена: Да\n\n"
-                    else:
-                        message += f"Подтверждена: <b>Нет</b>\n\n"
+                    message += (
+                        "Подтверждена: " +
+                        ("Да" if transaction.is_confirmed else "<b>Нет</b>") +
+                        "\n\n"
+                    )
+                    if not transaction.is_confirmed and not transaction.is_canceled:
                         buttons[f"Подтвердить {transaction.id}"] = (
                             f"firstadmin_{page_number}_{transaction.id}"
                         )

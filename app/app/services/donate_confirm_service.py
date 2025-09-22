@@ -141,7 +141,12 @@ class DonateConfirmService:
         )
         return donate_transaction
 
-    async def delete_donate_with_transactions(self, donate_id: uuid.UUID):
-        self._repository_donate.delete_donate_with_transactions(
+    async def delete_donate_with_transactions(self, donate_id: uuid.UUID) -> None:
+        return self._repository_donate.delete_donate_with_transactions(
+            donate_id=donate_id
+        )
+
+    async def cancel_donate_with_transactions(self, donate_id: uuid.UUID) -> None:
+        return self._repository_donate.cancel_donate_with_transactions(
             donate_id=donate_id
         )

@@ -34,7 +34,7 @@ async def check_is_donate_confirmed_or_delete_donate(
         telegram_user: TelegramUser = await telegram_user_service.get_telegram_user(id=donate.telegram_user_id)
         donate_sender_user_id = telegram_user.user_id
 
-    await donate_confirm_service.delete_donate_with_transactions(donate_id=donate_id)
+    await donate_confirm_service.cancel_donate_with_transactions(donate_id=donate_id)
     await bot.send_message(chat_id=donate_sender_user_id, text='Время отправки подарка вышло.')
 
 
