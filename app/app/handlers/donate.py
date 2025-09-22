@@ -66,7 +66,29 @@ async def subscription_checker(
     result = await callback.bot.get_chat_member(
         chat_id=settings.chat_id, user_id=callback.from_user.id
     )
-    if result.status not in (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED):
+    if result.status in (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED):
+        await callback.answer("Ты не подписался ❌", show_alert=True)
+        return
+
+    loguru.logger.info(callback.data)
+    await callback.message.delete()
+
+
+    if not callback.from_user.username:
+        await callback.message.answer(
+            "Для регистрации добавьте пожалуйста <em>username</em> в свой telegram аккаунт",
+            reply_markup=get_donate_keyboard(
+                buttons={"Попробовать ещё раз": callback.data}
+            )
+        )
+        return
+
+
+    current_user = await telegram_user_service.get_telegram_user(
+        user_id=callback.from_user.id
+    )
+
+    if not current_user:
         user_dict = callback.from_user.model_dump()
         user_id = user_dict.pop("id")
 
@@ -78,17 +100,15 @@ async def subscription_checker(
             user=user,
             sponsor=sponsor,
         )
-        await callback.message.delete()
-        await callback.message.answer(
-            "✅ Готово! Выбери сервис", reply_markup=get_reply_keyboard(current_user)
-        )
         await callback.bot.send_message(
             chat_id=sponsor.user_id,
             text=f"По вашей ссылке зарегистрировался пользователь @{current_user.username}."
         )
-        return
 
-    await callback.answer("Ты не подписался ❌", show_alert=True)
+    await callback.message.answer(
+        "✅ Готово! Выбери сервис", reply_markup=get_reply_keyboard(current_user)
+    )
+
 
 
 @donate_router.message(F.text == "💰 МОИ СТОЛЫ 💰")
