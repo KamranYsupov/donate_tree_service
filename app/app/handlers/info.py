@@ -124,10 +124,12 @@ async def referral_handler(
         telegram_user_service: TelegramUserService = Provide[
             Container.telegram_user_service
         ],
-) -> tuple[str, InlineKeyboardMarkup]:
+) -> tuple[str | None, InlineKeyboardMarkup | None]:
     invited_users = await telegram_user_service.get_invited_users(
         sponsor_user_id=from_user_id
     )
+    if not invited_users:
+        return None, None
 
     paginator = Paginator(
         invited_users,
@@ -171,11 +173,12 @@ async def referral_message_handler(
 
     message_text, reply_markup = await referral_handler(current_user.user_id)
 
-    await message.answer(
-        text=message_text,
-        reply_markup=reply_markup,
-        parse_mode='HTML'
-    )
+    if message_text:
+        await message.answer(
+            text=message_text,
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
     await message.answer(
         f"Ваша реферальная ссылка: {settings.bot_link}?start={current_user.user_id}",
     )
