@@ -71,6 +71,7 @@ services:
       - internal
     env_file:
       - .env
+    restart: always
 
   redis:
     image: redis:7.0.11-alpine
@@ -84,6 +85,8 @@ services:
       - internal
     env_file:
       - .env
+    restart: always
+
 
   worker:
     <<: *base_celery
@@ -91,6 +94,7 @@ services:
     container_name: ${PROJECT_SLUG}_worker
     command: >
       -A app.core.celery worker -l info -P gevent
+    restart: always
 
 
 volumes:
