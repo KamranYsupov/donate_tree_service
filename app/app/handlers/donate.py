@@ -251,7 +251,9 @@ async def confirm_donate(
     donate_sum = callback_donate_data.split("_")[-1]
 
     await callback.message.edit_text(
-        text=f"Для завершения действия, Вам необходимо отправить подарок ${donate_sum} в течение 15 минут. \n\n"
+        text=f"Для завершения действия, "
+             f"Вам необходимо отправить подарок ${donate_sum} "
+             f"в течение {settings.donate_confirmation_time_minutes} минут. \n\n"
              "<b>Вы согласны продолжить?</b>",
         parse_mode="HTML",
         reply_markup=get_donate_keyboard(
