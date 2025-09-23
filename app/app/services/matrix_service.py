@@ -102,17 +102,17 @@ class MatrixService:
 
                 if not any(username != 0 for username in first_level_usernames) \
                         and not any(username != 0 for username in second_level_usernames):
-                    message += "Ваша команда пуста\n"
+                    message += "Все места свободны\n"
                 else:
                     message += f"<b>1 уровень:</b>\n"
                     for index, telegram_username in enumerate(first_level_usernames):
                         message += \
-                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "пусто") + "\n"
+                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "свободно") + "\n"
 
                     message += f"\n<b>2 уровень:</b>\n"
                     for index, telegram_username in enumerate(second_level_usernames):
                         message += \
-                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "пусто") + "\n"
+                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "свободно") + "\n"
 
                 message += (
                     f"\nВсего участников: <b>{length}</b>\n\n"

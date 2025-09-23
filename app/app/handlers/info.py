@@ -27,7 +27,12 @@ async def about_handler(
         text="Презентация 📑",
         url="https://telegra.ph/Gift-MAFIA-09-17"
     )
+    chat_link_button = InlineKeyboardButton(
+        text="💬 Чат Gift Mafia",
+        url="https://t.me/gift_mafia_chat"
+    )
     presentation_keyboard.add(presentation_button)
+    presentation_keyboard.add(chat_link_button)
 
     await message.answer_photo(
         photo=base_photo,

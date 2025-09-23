@@ -42,7 +42,7 @@ async def subscribe_handler(
     sponsor_user_id = get_callback_value(callback.data)
 
     await callback.message.edit_text(
-        f"Для старта работы, подпишитесь на канал нашего сообщества\n\n {settings.chat_link}",
+        f"Для старта работы, присоединитесь к чату нашего сообщества\n\n {settings.chat_link}",
         reply_markup=get_donate_keyboard(
             buttons={
                 "Я подписан(а) ✅": f"menu_{sponsor_user_id}",
@@ -340,8 +340,8 @@ async def donate_handler(
 
     message = (
         f"Вы собираетесь отправить подарок в размере ${donate_sum}.\n\n"
-        f"Для этого свяжитесь с каждым пользователем из списка, "
-        f"возьмите их реквизиты, отправьте перевод и запросите подтверждение подарка:\n\n"
+        f"Для этого свяжитесь с пользователем, возьмите его реквизиты, "
+        f"отправьте перевод и запросите подтверждение подарка:\n\n"
     )
 
     for transaction in transactions:
