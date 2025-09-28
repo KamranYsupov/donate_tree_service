@@ -7,6 +7,17 @@ from app.core.config import settings
 from loguru import logger
 
 
+async def private_chat_only_middleware(handler, event: Message, data: dict):
+    """
+    Middleware, которое проверяет, что сообщение пришло из личного чата.
+    Если чат не личный, то handler не будет вызван.
+    """
+    if event.chat.type != 'private':
+        return None
+
+    return await handler(event, data)
+
+
 async def rate_limit_middleware(handler, event: Message, data: dict):
     """Middleware для ограничения отправки сообщений пользователем боту."""
 

@@ -4,7 +4,10 @@ from loguru import logger
 
 from app.handlers.routing import get_all_routers
 
-from app.middlewares.throttling import rate_limit_middleware
+from app.middlewares.throttling import (
+    private_chat_only_middleware,
+    rate_limit_middleware,
+)
 from app.middlewares.session_middleware import SQLAlchemySessionMiddleware
 
 from app.core.container import Container
@@ -20,6 +23,7 @@ async def main(container: Container):
 
         all_routers = get_all_routers()
         dp.include_routers(all_routers)
+        dp.message.middleware(private_chat_only_middleware)
         dp.message.middleware(rate_limit_middleware)
         dp.message.middleware(SQLAlchemySessionMiddleware(sync_session=sync_session))
         await dp.start_polling(bot)
