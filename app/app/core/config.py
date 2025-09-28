@@ -24,9 +24,10 @@ class Settings(BaseSettings):
     # region Настройки бота
     bot_token: str = Field(title="Токен бота")
     bot_name: str | None = Field(title="Имя бота", default=None)
-    bot_link: str | None = Field(title="Ссылка на бота", default=os.getenv("BOT_LINK"))
-    chat_id: int | None = Field(title="ID канала", default=os.getenv("CHAT_ID"))
-    chat_link: str | None = Field(title="Ссылка на канал", default=os.getenv("CHAT_LINK"))
+    bot_link: str | None = Field(title="Ссылка на бота")
+    chat_id: int | None = Field(title="ID канала")
+    chat_link: str | None = Field(title="Ссылка на канал")
+    donates_channel_id: int | None = Field(title="ID канала с донатами")
     message_per_second: float = Field(title="Кол-во сообщений в секунду", default=1)
     log_level: LogLevel = Field(title="Уровень логирования", default=LogLevel.INFO)
     # endregion
@@ -64,7 +65,7 @@ class Settings(BaseSettings):
 
     donate_confirmation_time_minutes: int = Field(
         title="Время на подтверждение доната в минутах",
-        default=15,
+        default=45,
     )
 
     @computed_field

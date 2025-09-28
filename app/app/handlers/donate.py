@@ -30,6 +30,7 @@ from app.utils.pagination import Paginator
 from app.utils.sort import get_reversed_dict
 from app.utils.sponsor import check_telegram_user_status
 from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
+from app.utils.texts import get_donate_confirm_message
 
 donate_router = Router()
 
@@ -798,14 +799,19 @@ async def confirm_transaction(
         if check_telegram_user_status(sender_user, current_matrix.status):
             sender_user.status = current_matrix.status
 
-        try:
-            await callback.bot.send_message(
-                text=f"Ваш подарок успешно подтвержден!\n",
-                chat_id=sender_user.user_id,
-                reply_markup=get_reply_keyboard(sender_user),
-            )
-        except Exception:
-            pass
+        await callback.bot.send_message(
+            text=f"Ваш подарок успешно подтвержден!\n",
+            chat_id=sender_user.user_id,
+            reply_markup=get_reply_keyboard(sender_user),
+        )
+        channel_donate_confirm_text = get_donate_confirm_message(
+            donate_sum=donate.quantity,
+            donate_status=current_matrix.status
+        )
+        await callback.bot.send_message(
+            text=channel_donate_confirm_text,
+            chat_id=settings.donates_channel_id,
+        )
 
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
                f"от пользователя @{sender_user.username} подтверждена.")
