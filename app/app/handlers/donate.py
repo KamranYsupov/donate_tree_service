@@ -70,7 +70,6 @@ async def subscription_checker(
         await callback.answer("Ты не подписался ❌", show_alert=True)
         return
 
-    loguru.logger.info(callback.data)
     await callback.message.delete()
 
 
