@@ -6,7 +6,7 @@ def get_donate_confirm_message(
         donate_status: DonateStatus,
 ) -> str | None:
     message_template = (
-        "💌 Участник получил  🎁 ${sum}\n\n"
+        "💌 Участник получил 🎁 ${sum}\n\n"
         "🛗 Стол: {status}\n\n"
         "😎 GiftMafia - Вместе к целям!"
     )
