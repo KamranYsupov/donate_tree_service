@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.services.matrix_service import MatrixService
 from app.utils.sponsor import get_callback_value
 from app.utils.pagination import Paginator
+from app.utils.matrix import get_matrices_length
+from app.utils.matrix import get_active_matrices, get_archived_matrices
 
 info_router = Router()
 
@@ -42,34 +44,9 @@ async def about_handler(
     )
 
 
-@info_router.message(F.text.casefold() == "моя команда")
-@inject
-async def team_handler(
-        message: Message,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-        matrix_service: MatrixService = Provide[Container.matrix_service],
-) -> None:
-    page_number = 1
-
-    current_user = await telegram_user_service.get_telegram_user(
-        user_id=message.from_user.id
-    )
-    matrices = await matrix_service.get_user_matrices(owner_id=current_user.id)
-
-    message, page_number, buttons, sizes = matrix_service.get_my_team_message(
-        matrices=matrices, current_user=current_user, page_number=page_number
-    )
-
-    await message.answer(
-        message,
-        reply_markup=get_donate_keyboard(buttons=buttons, sizes=sizes),
-        parse_mode="HTML",
-    )
-
 
 @info_router.callback_query(F.data.startswith("team_"))
+@info_router.callback_query(F.data.startswith("archive_team_"))
 @inject
 async def team_inline_handler(
         callback: CallbackQuery,
@@ -78,18 +55,45 @@ async def team_inline_handler(
         ],
         matrix_service: MatrixService = Provide[Container.matrix_service],
 ) -> None:
-    page_number = int(get_callback_value(callback.data))
+    is_archive = callback.data.split("_")[0] == "archive"
 
     current_user = await telegram_user_service.get_telegram_user(
         user_id=callback.from_user.id
     )
-    matrices = await matrix_service.get_user_matrices(owner_id=current_user.id)
+    matrices = await matrix_service.get_user_matrices(
+        owner_id=current_user.id
+    )
+    archived_matrices = get_archived_matrices(matrices)
+
+    if is_archive:
+        matrices = archived_matrices
+        title_text = "АРХИВ СТОЛОВ:"
+        page_number, previous_page_number = \
+            map(int, callback.data.split("_")[-2:])
+        callback_data_prefix = "archive_team"
+        back_button_data = f"team_{previous_page_number}"
+    else:
+        matrices = get_active_matrices(matrices)
+        title_text = "АКТИВНЫЕ СТОЛЫ:"
+        page_number = int(callback.data.split("_")[-1])
+        previous_page_number = None
+        callback_data_prefix = "team"
+        back_button_data = "donations"
+
 
     message, page_number, buttons, sizes = matrix_service.get_my_team_message(
-        matrices=matrices, current_user=current_user, page_number=page_number
+        matrices=matrices,
+        page_number=page_number,
+        previous_page_number=previous_page_number,
+        callback_data_prefix=callback_data_prefix
     )
+    message = f"<b>{title_text}</b>\n\n" + message
 
-    buttons |= {"🔙 Назад": f"donations"}
+
+    if not is_archive and archived_matrices:
+        buttons["АРХИВ СТОЛОВ 🗄"] = f"archive_team_1_{page_number}"
+
+    buttons["🔙 Назад"] = back_button_data
 
     await callback.message.edit_text(
         message,

@@ -30,7 +30,10 @@ class RepositoryMatrix(RepositoryBase[Matrix]):
         return result
 
     def get_user_matrices(
-            self, owner_id: uuid.uuid4, status: DonateStatus = None
+            self,
+            owner_id: uuid.UUID,
+            status: DonateStatus = None,
+
     ) -> list[Matrix]:
         if status:
             statement = (

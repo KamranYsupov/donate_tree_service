@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import List
 
 import loguru
 from app.models.matrix import Matrix
@@ -97,4 +98,22 @@ def find_first_level_matrix_id(
             return uuid.UUID(first_level_matrix_id)
 
     return None
+
+
+def get_archived_matrices(matrices: List[Matrix]) -> List[Matrix]:
+    archived_matrices = [
+        matrix for matrix in matrices
+        if get_matrices_length(matrix.matrices) == 12
+    ]
+
+    return archived_matrices
+
+
+def get_active_matrices(matrices: List[Matrix]) -> List[Matrix]:
+    archived_matrices = [
+        matrix for matrix in matrices
+        if get_matrices_length(matrix.matrices) < 12
+    ]
+
+    return archived_matrices
 

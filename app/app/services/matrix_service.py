@@ -12,7 +12,11 @@ from app.utils.matrix import get_sorted_matrices
 from app.utils.pagination import Paginator
 from app.models.telegram_user import TelegramUser
 from app.repositories.telegram_user import RepositoryTelegramUser
-from app.utils.matrix import get_matrices_length, get_matrices_list, get_my_team_telegram_usernames
+from app.utils.matrix import (
+    get_matrices_length,
+    get_matrices_list,
+    get_my_team_telegram_usernames,
+)
 from app.utils.sort import get_sorted_objects_by_ids
 from app.utils.matrix import find_first_level_matrix_id
 
@@ -81,12 +85,19 @@ class MatrixService:
     def get_my_team_message(
             self,
             matrices: list[Matrix],
-            current_user: TelegramUser,
             page_number: int,
+            per_page: int = 5,
+            callback_data_prefix: str = "team",
+            previous_page_number: int | None = None,
+
     ):
-        message = f"<b>МОЯ КОМАНДА:</b>\n\n"
+        message = ""
         sorted_matrices = get_sorted_matrices(matrices, status_list)
-        paginator = Paginator(sorted_matrices, page_number=page_number, per_page=5)
+        paginator = Paginator(
+            sorted_matrices,
+            page_number=page_number,
+            per_page=per_page
+        )
         buttons = {}
         sizes = (1, 1)
 
@@ -98,7 +109,8 @@ class MatrixService:
                     f"<b>Стол {matrix.id.hex[0:5]}: {matrix.status.value}</b>\n\n"
                 )
 
-                first_level_usernames, second_level_usernames, length = get_my_team_telegram_usernames(matrix)
+                first_level_usernames, second_level_usernames, length = \
+                    get_my_team_telegram_usernames(matrix)
 
                 if not any(username != 0 for username in first_level_usernames) \
                         and not any(username != 0 for username in second_level_usernames):
@@ -106,24 +118,35 @@ class MatrixService:
                 else:
                     message += f"<b>1 уровень:</b>\n"
                     for index, telegram_username in enumerate(first_level_usernames):
-                        message += \
-                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "свободно") + "\n"
+                        message += (
+                            f"{index + 1}. "
+                            + (f"@{telegram_username}" if telegram_username else "свободно")
+                            + "\n"
+                        )
 
                     message += f"\n<b>2 уровень:</b>\n"
                     for index, telegram_username in enumerate(second_level_usernames):
-                        message += \
-                            f"{index + 1}. " + (f"@{telegram_username}" if telegram_username else "свободно") + "\n"
+                        message +=(
+                            f"{index + 1}. "
+                            + (f"@{telegram_username}" if telegram_username else "свободно")
+                            + "\n"
+                        )
 
-                message += (
-                    f"\nВсего участников: <b>{length}</b>\n\n"
-                )
+                message += f"\nВсего участников: <b>{length}</b>\n\n"
+                message += "—————————\n\n" if matrix != matrices[-1] else ""
         else:
             message += "У вас нет активированных столов"
 
+        pagination_button_data = (
+            f"{callback_data_prefix}_"
+            +"{page_number}"
+            + (f"_{previous_page_number}" if previous_page_number else "")
+        )
+
         if paginator.has_previous():
-            buttons |= {"◀ Пред.": f"team_{page_number - 1}"}
+            buttons |= {"◀ Пред.": pagination_button_data.format(page_number=page_number-1)}
         if paginator.has_next():
-            buttons |= {"След. ▶": f"team_{page_number + 1}"}
+            buttons |= {"След. ▶": pagination_button_data.format(page_number=page_number+1)}
 
         if len(buttons) == 2:
             sizes = (2, 1)

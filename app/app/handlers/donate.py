@@ -122,7 +122,7 @@ async def donations_menu_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    default_buttons = {"Транзакции 💳": "transactions", "МОЯ КОМАНДА": "team_1"}
+    default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
 
     current_user = await telegram_user_service.get_telegram_user(
         user_id=message.from_user.id
@@ -185,7 +185,7 @@ async def donations_menu_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    default_buttons = {"Транзакции 💳": "transactions", "МОЯ КОМАНДА": "team_1"}
+    default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
 
     current_user = await telegram_user_service.get_telegram_user(
         user_id=callback.from_user.id
@@ -227,7 +227,7 @@ async def donations_menu_handler(
             "доступна только после подтверждения текущего"
         )
 
-    buttons.update(default_buttons | {"МОЯ КОМАНДА": "team_1"})
+    buttons.update(default_buttons | {"АКТИВНЫЕ СТОЛЫ": "team_1"})
 
     await callback.message.edit_text(
         parse_mode="HTML",
@@ -305,7 +305,7 @@ async def donate_handler(
         )
         await callback.message.edit_text(
             text=message_text,
-            reply_markup=get_donate_keyboard(buttons={"МОЯ КОМАНДА": "team_1"}),
+            reply_markup=get_donate_keyboard(buttons={"АКТИВНЫЕ СТОЛЫ": "team_1"}),
         )
         return
 
