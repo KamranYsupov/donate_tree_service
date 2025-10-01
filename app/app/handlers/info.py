@@ -13,6 +13,7 @@ from app.utils.sponsor import get_callback_value
 from app.utils.pagination import Paginator
 from app.utils.matrix import get_matrices_length
 from app.utils.matrix import get_active_matrices, get_archived_matrices
+from app.models.telegram_user import status_list, status_emoji_list
 
 info_router = Router()
 
@@ -102,28 +103,6 @@ async def team_inline_handler(
     )
 
 
-@info_router.callback_query(F.data == "chain")
-@inject
-async def chain_handler(
-        callback: CallbackQuery,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-) -> None:
-    message = "<b>Цепочка приглашенных ⛓</b>"
-    chain = await telegram_user_service.get_sponsors_chain(
-        user_id=callback.from_user.id
-    )
-    # for telegram_user in chain:
-    #     message += f"@{telegram_user.usersname}\n\n" if telegram_user.usersname else f"{telegram_user.firstname}\n\n"
-
-    await callback.message.edit_text(
-        f"{chain}",
-        reply_markup=get_donate_keyboard(buttons={"🔙 Назад": f"team_1"}),
-        parse_mode="HTML",
-    )
-
-
 @inject
 async def referral_handler(
         from_user_id: int,
@@ -146,6 +125,10 @@ async def referral_handler(
     )
     buttons = {}
     message_text = f"<b>Ваши рефералы (страница {page_number}):</b>\n\n"
+    status_emoji_data = {
+        status_list[i]: status_emoji_list[i]
+        for i in range(len(status_list))
+    }
 
     if paginator.has_previous():
         buttons |= {"◀ Пред.": f"referrals_{page_number - 1}"}
@@ -154,7 +137,8 @@ async def referral_handler(
 
     start_count = per_page * page_number - per_page + 1
     for user in paginator.get_page():
-        message_text += f"{start_count}. @{user.username}\n"
+        user_status_emoji = status_emoji_data.get(user.status, "🆓",)
+        message_text += f"{start_count}. @{user.username}: {user_status_emoji}\n"
         start_count += 1
 
     reply_markup = get_donate_keyboard(
