@@ -28,14 +28,22 @@ async def about_handler(
     presentation_keyboard = InlineKeyboardBuilder()
     presentation_button = InlineKeyboardButton(
         text="Презентация 📑",
-        url="https://telegra.ph/Gift-MAFIA-09-17"
+        url=settings.presentation_link
     )
     chat_link_button = InlineKeyboardButton(
         text="💬 Чат Gift Mafia",
-        url="https://t.me/gift_mafia_chat"
+        url=settings.group_link
     )
-    presentation_keyboard.add(presentation_button)
-    presentation_keyboard.add(chat_link_button)
+    donate_channel_link_button = InlineKeyboardButton(
+        text="Канал Подарков 🎁",
+        url=settings.donates_channel_link
+    )
+    presentation_keyboard.add(
+        presentation_button,
+        chat_link_button,
+        donate_channel_link_button
+    )
+    presentation_keyboard.add()
 
     await message.answer_photo(
         photo=base_photo,

@@ -24,10 +24,13 @@ class Settings(BaseSettings):
     # region Настройки бота
     bot_token: str = Field(title="Токен бота")
     bot_name: str | None = Field(title="Имя бота", default=None)
-    bot_link: str | None = Field(title="Ссылка на бота")
-    chat_id: int | None = Field(title="ID канала")
-    chat_link: str | None = Field(title="Ссылка на канал")
-    donates_channel_id: int | None = Field(title="ID канала с донатами")
+    bot_link: str = Field(title="Ссылка на бота")
+    chat_id: int = Field(title="ID канала")
+    chat_link: str = Field(title="Ссылка на канал")
+    group_link: str = Field(title="Ссылка на чат")
+    presentation_link: str = Field(title="Ссылка на презентацию")
+    donates_channel_id: int = Field(title="ID канала с донатами")
+    donates_channel_link: str = Field(title="Ссылка на канал с донатами")
     message_per_second: float = Field(title="Кол-во сообщений в секунду", default=1)
     log_level: LogLevel = Field(title="Уровень логирования", default=LogLevel.INFO)
     # endregion
