@@ -70,6 +70,7 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
     bill = Column(Float, default=0.0)
     is_admin = Column(Boolean, index=True, default=False)
     wallet_address = Column(String, nullable=True)
+    depth_level = Column(Integer, default=0)
 
     sponsor = relationship(
         "TelegramUser", remote_side="TelegramUser.user_id", backref="invited_users"
