@@ -101,6 +101,7 @@ async def admin(
     user_dict["user_id"] = user_id
     user_dict["is_admin"] = True
     user_dict["status"] = DonateStatus.BASE
+    user_dict["depth_level"] = 0
     user = TelegramUserEntity(**user_dict)
 
     admin_user = await telegram_user_service.create_telegram_user(user=user)
@@ -232,10 +233,10 @@ async def admin(
 #     )
 #
 #
-# def generate_random_user():
-#     return TelegramUserEntity(
-#         user_id=random.randint(1, 1000),
-#         username=f"user_{random.randint(1, 1000)}",
-#         first_name=f"User{random.randint(1, 100)}",
-#         last_name=f"LastName{random.randint(1, 100)}",
-#     )
+def generate_random_user():
+    return TelegramUserEntity(
+        user_id=random.randint(1, 1000),
+        username=f"user_{random.randint(1, 1000)}",
+        first_name=f"User{random.randint(1, 100)}",
+        last_name=f"LastName{random.randint(1, 100)}",
+    )

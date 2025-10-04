@@ -95,6 +95,7 @@ async def subscription_checker(
 
         user_dict["user_id"] = user_id
         user_dict["sponsor_user_id"] = sponsor_user_id
+        user_dict["depth_level"] = sponsor.depth_level + 1
         user = TelegramUserEntity(**user_dict)
 
         current_user = await telegram_user_service.create_telegram_user(

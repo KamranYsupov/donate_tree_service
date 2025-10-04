@@ -18,3 +18,4 @@ class TelegramUserEntity(BaseModel):
     donates_sum: int = Field(title="Сумма донатов", default=0)
     bill: int = Field(title="Счет", default=0)
     is_admin: bool = Field(title="Супер пользователь", default=False)
+    depth_level: int = Field(title="Уровень глубины")
