@@ -67,3 +67,25 @@ class TelegramUserService:
         return self._repository_telegram_user.get_invited_users(
             sponsor_user_id=sponsor_user_id
         )
+
+    async def get_user_depth_level(self, user_id: int) -> int | None:
+        """
+        Вычисляет глубину пользователя итеративным подъемом по спонсорам.
+        """
+        current_id = user_id
+        depth = 0
+
+        while True:
+            user = self._repository_telegram_user.get(user_id=current_id)
+
+            if not user:
+                return None
+
+            if user.is_admin:
+                return depth
+
+            current_id = user.sponsor_user_id
+            depth += 1
+
+            if depth > 10000:
+                return None
