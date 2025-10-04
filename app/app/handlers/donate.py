@@ -4,6 +4,7 @@ import uuid
 import loguru
 from aiogram import Router, F, Bot
 from aiogram.enums import ChatMemberStatus
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -100,10 +101,14 @@ async def subscription_checker(
             user=user,
             sponsor=sponsor,
         )
-        await callback.bot.send_message(
-            chat_id=sponsor.user_id,
-            text=f"По вашей ссылке зарегистрировался пользователь @{current_user.username}."
-        )
+
+        try:
+            await callback.bot.send_message(
+                chat_id=sponsor.user_id,
+                text=f"По вашей ссылке зарегистрировался пользователь @{current_user.username}."
+            )
+        except TelegramBadRequest:
+            pass
 
     await callback.message.answer(
         "✅ Готово! Выбери сервис", reply_markup=get_reply_keyboard(current_user)
@@ -799,19 +804,28 @@ async def confirm_transaction(
         if check_telegram_user_status(sender_user, current_matrix.status):
             sender_user.status = current_matrix.status
 
-        await callback.bot.send_message(
-            text=f"Ваш подарок успешно подтвержден!\n",
-            chat_id=sender_user.user_id,
-            reply_markup=get_reply_keyboard(sender_user),
-        )
-        channel_donate_confirm_text = get_donate_confirm_message(
-            donate_sum=donate.quantity,
-            donate_status=current_matrix.status
-        )
-        await callback.bot.send_message(
-            text=channel_donate_confirm_text,
-            chat_id=settings.donates_channel_id,
-        )
+
+        try:
+            await callback.bot.send_message(
+                text=f"Ваш подарок успешно подтвержден!\n",
+                chat_id=sender_user.user_id,
+                reply_markup=get_reply_keyboard(sender_user),
+            )
+        except TelegramBadRequest:
+            pass
+
+        try:
+            channel_donate_confirm_text = get_donate_confirm_message(
+                donate_sum=donate.quantity,
+                donate_status=current_matrix.status
+            )
+            await callback.bot.send_message(
+                text=channel_donate_confirm_text,
+                chat_id=settings.donates_channel_id,
+            )
+        except TelegramBadRequest:
+            pass
+
 
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
                f"от пользователя @{sender_user.username} подтверждена.")
