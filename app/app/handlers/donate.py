@@ -876,7 +876,18 @@ async def confirm_admin_transaction(
                 chat_id=sender_user.user_id,
                 reply_markup=get_reply_keyboard(sender_user),
             )
-        except Exception:
+        except TelegramBadRequest:
+            pass
+        try:
+            channel_donate_confirm_text = get_donate_confirm_message(
+                donate_sum=donate.quantity,
+                donate_status=current_matrix.status
+            )
+            await callback.bot.send_message(
+                text=channel_donate_confirm_text,
+                chat_id=settings.donates_channel_id,
+            )
+        except TelegramBadRequest:
             pass
 
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
