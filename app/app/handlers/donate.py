@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 import uuid
 
@@ -5,7 +6,7 @@ import loguru
 from aiogram import Router, F, Bot
 from aiogram.enums import ChatMemberStatus
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -32,6 +33,7 @@ from app.utils.sort import get_reversed_dict
 from app.utils.sponsor import check_telegram_user_status
 from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
 from app.utils.texts import get_donate_confirm_message
+from app.utils.excel import export_users_to_excel
 
 donate_router = Router()
 
@@ -138,6 +140,9 @@ async def donations_menu_handler(
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
             f"Получено подарков: <b>${int(current_user.bill)}</b>\n"
         )
+        buttons = default_buttons
+        buttons.update({"Скачать базу ⬇️": "excel_users"})
+
         await message.answer(
             text=message_text,
             reply_markup=get_donate_keyboard(
@@ -178,6 +183,25 @@ async def donations_menu_handler(
             buttons=buttons,
         ),
     )
+
+
+@donate_router.callback_query(F.data == 'excel_users')
+async def export_users_to_excel_callback_handler(
+        callback: CallbackQuery,
+):
+    await callback.message.edit_text(
+        "<em>Подождите немного ...</em>",
+        parse_mode='HTML',
+    )
+
+    file_name = "app/telegram_users.xlsx"
+    await export_users_to_excel(file_name)
+    file_input = FSInputFile(file_name)
+
+    await callback.message.delete()
+    await callback.message.answer_document(file_input)
+
+    os.remove(file_name)
 
 
 @donate_router.callback_query(F.data == "donations")

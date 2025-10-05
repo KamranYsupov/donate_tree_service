@@ -12,8 +12,17 @@ class TelegramUserService:
     def __init__(self, repository_telegram_user: RepositoryTelegramUser) -> None:
         self._repository_telegram_user = repository_telegram_user
 
-    async def get_list(self, *args, **kwargs) -> list[TelegramUser]:
-        return self._repository_telegram_user.list(*args, **kwargs)
+    async def get_list(
+            self,
+            *args,
+            join_sponsor: bool = False,
+            **kwargs
+    ) -> list[TelegramUser]:
+        return self._repository_telegram_user.get_list(
+            *args,
+            join_sponsor=join_sponsor,
+            **kwargs
+        )
 
     async def get_telegram_user(self, **kwargs) -> TelegramUser:
         return self._repository_telegram_user.get(**kwargs)

@@ -24,6 +24,8 @@ aiogram-tonconnect = "^0.13.5"
 redis = "^5.0.4"
 gevent = "^25.9.1"
 celery = "^5.5.3"
+openpyxl = "^3.1.5"
+pandas = "^2.3.3"
 
 
 [build-system]

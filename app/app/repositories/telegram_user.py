@@ -1,5 +1,5 @@
 from sqlalchemy import select, text
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import joinedload
 
 from .base import RepositoryBase
 from app.models.telegram_user import TelegramUser
@@ -7,6 +7,26 @@ from app.models.telegram_user import TelegramUser
 
 class RepositoryTelegramUser(RepositoryBase[TelegramUser]):
     """Репозиторий телеграм пользователя"""
+
+    def get_list(
+            self,
+            *args,
+            join_sponsor: bool = False,
+            **kwargs
+    ):
+
+        query_options = []
+        if join_sponsor:
+            query_options.append(joinedload(TelegramUser.sponsor))
+
+        statement = (
+            select(TelegramUser)
+            .options(*query_options)
+            .filter(*args)
+            .filter_by(**kwargs)
+            .order_by(TelegramUser.created_at)
+        )
+        return self._session.execute(statement).scalars().all()
 
     def get_invited_users(
             self,

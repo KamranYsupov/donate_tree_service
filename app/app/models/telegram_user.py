@@ -73,9 +73,14 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
     depth_level = Column(Integer, default=0)
 
     sponsor = relationship(
-        "TelegramUser", remote_side="TelegramUser.user_id", backref="invited_users"
+        "TelegramUser",
+        remote_side="TelegramUser.user_id",
+        backref="invited_users"
     )
-    transactions = relationship("Transaction", back_populates="telegram_user")
+    transactions = relationship(
+        "Transaction",
+        back_populates="telegram_user"
+    )
 
     __table_args__ = (
         UniqueConstraint("user_id", name="unique_user_id"),
@@ -83,4 +88,7 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
     )
 
     def __repr__(self) -> str:
-        return f"Пользователь: {self.user_id}"
+        return (
+            self.username if self.username
+            else f"Пользователь: {self.user_id}"
+        )

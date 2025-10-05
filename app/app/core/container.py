@@ -28,6 +28,7 @@ class Container(containers.DeclarativeContainer):
             "app.handlers.start",
             "app.handlers.info",
             "app.tasks.donate",
+            "app.utils.excel",
         ]
     )
 
