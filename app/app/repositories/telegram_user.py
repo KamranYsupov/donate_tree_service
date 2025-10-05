@@ -1,4 +1,4 @@
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 from sqlalchemy.orm import joinedload
 
 from .base import RepositoryBase
@@ -25,6 +25,30 @@ class RepositoryTelegramUser(RepositoryBase[TelegramUser]):
             .filter(*args)
             .filter_by(**kwargs)
             .order_by(TelegramUser.created_at)
+        )
+        return self._session.execute(statement).scalars().all()
+
+    def get_count(
+            self,
+            *args,
+            **kwargs
+    ) -> int:
+        statement = (
+            select(func.count(TelegramUser.user_id))
+            .filter(*args)
+            .filter_by(**kwargs)
+        )
+        return self._session.execute(statement).scalar()
+
+    def get_bills(
+            self,
+            *args,
+            **kwargs
+    ) -> list[int]:
+        statement = (
+            select(TelegramUser.bill)
+            .filter(*args)
+            .filter_by(**kwargs)
         )
         return self._session.execute(statement).scalars().all()
 

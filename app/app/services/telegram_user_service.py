@@ -98,3 +98,13 @@ class TelegramUserService:
 
             if depth > 10000:
                 return None
+
+    async def get_count(self, *args, **kwargs) -> int:
+        return self._repository_telegram_user.get_count(*args, **kwargs)
+
+    async def get_bills_sum(
+            self,
+            *args,
+            **kwargs
+    ) -> int:
+        return sum(self._repository_telegram_user.get_bills(*args, **kwargs))

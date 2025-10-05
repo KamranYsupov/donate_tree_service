@@ -1,4 +1,9 @@
-from app.models.telegram_user import DonateStatus
+from app.models.telegram_user import (
+    DonateStatus,
+    status_list,
+    status_emoji_list,
+)
+from app.models.telegram_user import TelegramUser
 
 
 def get_donate_confirm_message(
@@ -31,5 +36,36 @@ def get_donate_confirm_message(
         sum=int(donate_sum),
         status=status
     )
+
+
+def get_user_statuses_statistic_message(
+        users: list[TelegramUser],
+) -> str:
+    status_emoji_data = {
+        status_list[i]: status_emoji_list[i]
+        for i in range(len(status_list))
+    }
+    statuses_data = {"🆓": 0}
+    statuses_data.update({status: 0 for status in status_emoji_list})
+
+    for user in users:
+        if user.status == DonateStatus.NOT_ACTIVE:
+            statuses_data["🆓"] += 1
+            continue
+
+        statuses_data[status_emoji_data[user.status]] += 1
+
+    message = ""
+
+    for status, count in list(statuses_data.items())[::-1]:
+        message += f"{status}: {count}\n"
+
+    return message
+
+
+
+
+
+
 
 

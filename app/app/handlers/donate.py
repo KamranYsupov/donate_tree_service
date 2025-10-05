@@ -34,6 +34,7 @@ from app.utils.sponsor import check_telegram_user_status
 from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
 from app.utils.texts import get_donate_confirm_message
 from app.utils.excel import export_users_to_excel
+from app.utils.texts import get_user_statuses_statistic_message
 
 donate_router = Router()
 
@@ -118,11 +119,11 @@ async def subscription_checker(
     )
 
 
-
+@donate_router.callback_query(F.data == "donations")
 @donate_router.message(F.text == "💰 МОИ СТОЛЫ 💰")
 @inject
 async def donations_menu_handler(
-        message: Message,
+        aiogram_type: Message | CallbackQuery,
         telegram_user_service: TelegramUserService = Provide[
             Container.telegram_user_service
         ],
@@ -130,20 +131,30 @@ async def donations_menu_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
+    telegram_method = aiogram_type.answer \
+        if isinstance(aiogram_type, Message) \
+        else aiogram_type.message.edit_text
+
     default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
 
     current_user = await telegram_user_service.get_telegram_user(
-        user_id=message.from_user.id
+        user_id=aiogram_type.from_user.id
     )
     if current_user.is_admin:
+        users = await telegram_user_service.get_list()
+        bills_sum = await telegram_user_service.get_bills_sum()
+        statuses_statistic_message = get_user_statuses_statistic_message(users)
         message_text = (
+            f"Партнеров в GiftMafia: <b>{len(users)}</b>\n"
+            f"Всего подарили: <b>${int(bills_sum)}</b>\n\n"
+            f"{statuses_statistic_message}\n"
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
             f"Получено подарков: <b>${int(current_user.bill)}</b>\n"
         )
         buttons = default_buttons
         buttons.update({"Скачать базу ⬇️": "excel_users"})
 
-        await message.answer(
+        await telegram_method(
             text=message_text,
             reply_markup=get_donate_keyboard(
                 buttons=default_buttons,
@@ -176,7 +187,7 @@ async def donations_menu_handler(
 
     buttons.update(default_buttons)
 
-    await message.answer(
+    await telegram_method(
         parse_mode="HTML",
         text=message_text,
         reply_markup=get_donate_keyboard(
@@ -202,70 +213,6 @@ async def export_users_to_excel_callback_handler(
     await callback.message.answer_document(file_input)
 
     os.remove(file_name)
-
-
-@donate_router.callback_query(F.data == "donations")
-@inject
-async def donations_menu_handler(
-        callback: CallbackQuery,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-        donate_confirm_service: DonateConfirmService = Provide[
-            Container.donate_confirm_service
-        ],
-) -> None:
-    default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
-
-    current_user = await telegram_user_service.get_telegram_user(
-        user_id=callback.from_user.id
-    )
-    if current_user.is_admin:
-        message_text = (
-            f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-            f"Получено подарков: <b>$</b>{current_user.bill}\n"
-        )
-
-        await callback.message.edit_text(
-            text=message_text,
-            reply_markup=get_donate_keyboard(
-                buttons=default_buttons,
-            ),
-        )
-        return
-
-    all_donates = await donate_confirm_service.get_donate_by_telegram_user_id(
-        telegram_user_id=current_user.id
-    )
-    buttons = {}
-    if not all_donates:
-        sponsor = await telegram_user_service.get_telegram_user(
-            user_id=current_user.sponsor_user_id
-        )
-        buttons.update(get_reversed_dict(get_donations_keyboard(current_user, status_list)))
-        message_text = (
-                f"Ваш спонсор: "
-                + ("@" + sponsor.username if sponsor.username else sponsor.first_name)
-                + "\n"
-                  f"Мой статус: <b>{current_user.status.value}</b>\n"
-                  f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-                  f"Получено подарков: <b>$</b>{current_user.bill}\n"
-        )
-    else:
-        message_text = (
-            "Возможность отправки следующего подарка будет "
-            "доступна только после подтверждения текущего"
-        )
-
-    buttons.update(default_buttons | {"АКТИВНЫЕ СТОЛЫ": "team_1"})
-
-    await callback.message.edit_text(
-        parse_mode="HTML",
-        text=message_text,
-        reply_markup=get_donate_keyboard(
-            buttons=buttons,
-        ),
-    )
 
 
 @donate_router.callback_query(F.data.startswith("confirm_donate_"))
