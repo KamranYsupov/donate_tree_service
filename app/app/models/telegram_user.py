@@ -71,6 +71,7 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
     is_admin = Column(Boolean, index=True, default=False)
     wallet_address = Column(String, nullable=True)
     depth_level = Column(Integer, default=0)
+    is_banned = Column(Boolean, default=False)
 
     sponsor = relationship(
         "TelegramUser",
