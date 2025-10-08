@@ -20,26 +20,6 @@ from app.db.commit_decorator import commit_and_close_session
 info_router = Router()
 
 
-@info_router.message(Command("generate_depth"))
-@inject
-@commit_and_close_session
-async def depth_handler(
-        message: Message,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-) -> None:
-    users = await telegram_user_service.get_list()
-
-    for user in users:
-        depth = await telegram_user_service.get_user_depth_level(
-            user_id=user.user_id
-        )
-        user.depth_level = depth
-
-        await message.answer(f"{user.username}: {depth}")
-
-
 @info_router.message(F.text == "🎁 GIFT MAFIA 🎁")
 @inject
 async def about_handler(
