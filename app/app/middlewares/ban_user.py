@@ -24,6 +24,8 @@ async def ban_user_middleware(
     current_user = await telegram_user_service.get_telegram_user(
         user_id=event.from_user.id
     )
+    if not current_user:
+        return await handler(event, data)
     if current_user.is_banned:
         await event.bot.send_message(
             chat_id=event.from_user.id,
