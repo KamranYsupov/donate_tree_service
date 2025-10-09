@@ -185,7 +185,7 @@ class MatrixService:
             )
             if not parent_matrix:
                 return
-            # переделать
+
             parent_matrix.matrices[str(matrix_to_add.id)].append(str(created_matrix.id))
 
             (parent_matrix.matrix_telegram_usernames[

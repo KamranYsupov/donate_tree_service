@@ -49,6 +49,8 @@ class DonateConfirmService:
         Всю инфу берет из donate_data.
         """
         for sponsor, sponsor_amount in donate_data.items():
+            if sponsor.is_banned:
+                sponsor = self._repository_telegram_user.get(is_admin=True)
             donate_transaction_dict = {
                 "sponsor_id": sponsor.id,
                 "donate_id": donate_id,

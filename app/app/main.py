@@ -8,6 +8,9 @@ from app.middlewares.throttling import (
     private_chat_only_middleware,
     rate_limit_middleware,
 )
+from app.middlewares.ban_user import (
+    ban_user_middleware,
+)
 from app.middlewares.session_middleware import SQLAlchemySessionMiddleware
 
 from app.core.container import Container
@@ -26,6 +29,9 @@ async def main(container: Container):
         dp.message.middleware(private_chat_only_middleware)
         dp.message.middleware(rate_limit_middleware)
         dp.message.middleware(SQLAlchemySessionMiddleware(sync_session=sync_session))
+        dp.message.middleware(ban_user_middleware)
+        dp.callback_query.middleware(ban_user_middleware)
+
         await dp.start_polling(bot)
     finally:
         await bot.session.close()

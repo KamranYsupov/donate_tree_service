@@ -96,8 +96,6 @@ class DonateService:
                 )
                 return matrix
 
-            # переделать
-
             parent_owner = self._repository_telegram_user.get(id=parent_matrix.owner_id)
             self._extend_donations_data(donations_data, parent_owner, donate_sum)
 

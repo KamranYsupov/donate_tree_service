@@ -152,7 +152,12 @@ async def donations_menu_handler(
             f"Получено подарков: <b>${int(current_user.bill)}</b>\n"
         )
         buttons = default_buttons
-        buttons.update({"Скачать базу ⬇️": "excel_users"})
+        admin_buttons = {
+            "Скачать базу ⬇️": "excel_users",
+            "Список забаненных пользователей 📇🅱️": "banned_users_1",
+            "Забанить пользователя 🔒": "ban_user",
+        }
+        buttons.update(admin_buttons)
 
         await telegram_method(
             text=message_text,

@@ -1,3 +1,5 @@
+from aiogram import html
+
 from app.models.telegram_user import (
     DonateStatus,
     status_list,
@@ -63,6 +65,16 @@ def get_user_statuses_statistic_message(
     return message
 
 
+def get_user_info_message(user: TelegramUser) -> str:
+    message = (
+        f"ID: {html.bold(user.id)}\n\n"
+        f"Telegram ID: {html.bold(user.user_id)}\n"
+        f"Username: @{user.username}\n"
+        f"Полное имя: {html.bold(user.full_name)}\n"
+        f"Дата и время регистрации: "
+        + html.bold(user.created_at.strftime("%d.%m.%Y %H:%M"))
+    )
+    return message
 
 
 
