@@ -16,6 +16,7 @@ from app.utils.matrix import get_matrices_length
 from app.utils.matrix import get_active_matrices, get_archived_matrices
 from app.models.telegram_user import status_list, status_emoji_list
 from app.db.commit_decorator import commit_and_close_session
+from app.utils.texts import get_my_team_message, get_matrix_info_message
 
 info_router = Router()
 
@@ -55,7 +56,6 @@ async def about_handler(
     )
 
 
-
 @info_router.callback_query(F.data.startswith("team_"))
 @info_router.callback_query(F.data.startswith("archive_team_"))
 @inject
@@ -92,7 +92,7 @@ async def team_inline_handler(
         back_button_data = "donations"
 
 
-    message, page_number, buttons, sizes = matrix_service.get_my_team_message(
+    message, page_number, buttons, sizes = get_my_team_message(
         matrices=matrices,
         page_number=page_number,
         previous_page_number=previous_page_number,
@@ -111,6 +111,21 @@ async def team_inline_handler(
         reply_markup=get_donate_keyboard(buttons=buttons, sizes=sizes),
         parse_mode="HTML",
     )
+
+
+@info_router.callback_query(F.data.startswith("detail_matrix_"))
+@inject
+async def team_inline_handler(
+        callback: CallbackQuery,
+        matrix_service: MatrixService = Provide[Container.matrix_service],
+) -> None:
+    matrix_id = callback.data.split("_")[-1]
+    matrix = await matrix_service.get_matrix(
+        id=matrix_id
+    )
+
+    message_text = get_matrix_info_message(matrix)
+    await callback.message.edit_text(text=message_text)
 
 
 @inject
@@ -146,7 +161,7 @@ async def referral_handler(
     if paginator.has_next():
         buttons |= {"След. ▶": f"referrals_{page_number + 1}"}
 
-    buttons.update({"Отправить рассылку": f"referral_message_{page_number}"})
+    buttons.update({"Отправить рассылку 📨": f"referral_message_{page_number}"})
 
     if len(list(buttons.keys())) == 3:
         sizes = (2, 1)

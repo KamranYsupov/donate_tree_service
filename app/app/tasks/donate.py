@@ -13,6 +13,9 @@ from app.services.donate_confirm_service import DonateConfirmService
 from app.services.telegram_user_service import TelegramUserService
 from app.core import celery_app
 from app.loader import bot
+from app.tasks.const import (
+    loop
+)
 
 
 @commit_and_close_session
@@ -23,7 +26,6 @@ async def check_is_donate_confirmed_or_delete_donate(
     container = Container()
     donate_confirm_service = container.donate_confirm_service()
     telegram_user_service = container.telegram_user_service()
-
     is_confirmed: bool = await donate_confirm_service.check_donate_is_confirmed(donate_id=donate_id)
 
     if is_confirmed:
@@ -41,10 +43,6 @@ async def check_is_donate_confirmed_or_delete_donate(
     except Exception:
         pass
 
-
-
-
-loop = asyncio.get_event_loop()
 
 @celery_app.task
 def check_is_donate_confirmed_or_delete_donate_task(

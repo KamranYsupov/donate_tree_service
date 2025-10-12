@@ -57,12 +57,11 @@ async def referral_message_callback_handler(
         callback: CallbackQuery
 ) -> None:
     page_number = callback.data.split("_")[-1]
-    await callback.message.edit_text(
-        text="Выберите действие:",
+    await callback.message.edit_reply_markup(
         reply_markup=get_donate_keyboard(
             buttons={
-                "Отправить готовое": "send_complete_message",
-                "Создать с нуля": "create_message",
+                "Отправить готовое 📩": "send_complete_message",
+                "Создать с нуля 📝": "create_message",
                 "🔙 Назад": f"referrals_{page_number}"
             },
             sizes=(2, )
@@ -144,7 +143,7 @@ async def answer_created_message(
         "Готовый вариант:",
         reply_markup=get_reply_keyboard(current_user)
     )
-    message = await send_assembled_message(
+    complete_message = await send_assembled_message(
         bot=message.bot,
         chat_id=from_user_id,
         text=data.get("text"),
@@ -153,12 +152,13 @@ async def answer_created_message(
         button_link=data.get("button_link"),
     )
 
-    await state.update_data(complete_message=message)
+    await state.update_data(complete_message=complete_message)
     await state.set_state(MessageForm.confirm_referrals_send)
 
     await message.answer(
         "Отправить рассылку?",
-        reply_markup=get_confirm_referrals_send_keyboard()
+        reply_to_message_id=complete_message.message_id,
+        reply_markup=get_confirm_referrals_send_keyboard(),
     )
 
 
@@ -234,12 +234,13 @@ async def process_complete_message_handler(
         "Готовый вариант:",
         reply_markup=get_reply_keyboard(current_user)
     )
-    await echo_message_with_media(
+    echo_message: Message = await echo_message_with_media(
         chat_id=message.from_user.id,
         original_message=message,
     )
     await message.answer(
         "Отправить рассылку?",
+        reply_to_message_id=echo_message.message_id,
         reply_markup=get_confirm_referrals_send_keyboard()
     )
 
@@ -269,13 +270,14 @@ async def confirm_referrals_send_message_handler(
 
     for user in invited_users:
         try:
-            await callback.bot.send_message(
+            message = await callback.bot.send_message(
                 chat_id=user.user_id,
                 text="Вам сообщение от вашего спонсора:"
             )
             await echo_message_with_media(
                 chat_id=user.user_id,
-                original_message=state_data["complete_message"]
+                original_message=state_data["complete_message"],
+                reply_to_message_id=message.message_id,
             )
         except TelegramBadRequest:
             continue

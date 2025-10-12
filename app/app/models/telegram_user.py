@@ -51,7 +51,15 @@ status_emoji_list = [
     "6️⃣" ,
     "7️⃣" ,
 ]
-
+statuses_colors_data = {
+    DonateStatus.BASE: "🟢",
+    DonateStatus.BRONZE : "🟠",
+    DonateStatus.SILVER: "⚪",
+    DonateStatus.GOLD: "🟡",
+    DonateStatus.PLATINUM: "⚫",
+    DonateStatus.DIAMOND: "🔵",
+    DonateStatus.BRILLIANT: "🟣",
+}
 
 class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
     """Модель телеграм пользователя"""

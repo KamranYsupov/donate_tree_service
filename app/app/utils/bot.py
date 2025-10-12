@@ -12,118 +12,115 @@ from app.loader import bot
 
 async def echo_message_with_media(
         chat_id: int,
-        original_message: Message
-):
+        original_message: Message,
+        reply_to_message_id: int | None = None
+) -> Message:
     """Полностью копирует сообщение с медиа"""
     text = original_message.text or original_message.caption or ""
     reply_markup = original_message.reply_markup
     # Фото
+
+    default_kwargs = dict(
+        chat_id=chat_id,
+        reply_markup=reply_markup,
+        reply_to_message_id=reply_to_message_id,
+    )
+
     if original_message.photo:
-        await bot.send_photo(
-            chat_id=chat_id,
+        return await bot.send_photo(
             photo=original_message.photo[-1].file_id,
             caption=text,
-            reply_markup=reply_markup,
+            **default_kwargs
     )
 
     # Видео
     elif original_message.video:
-        await bot.send_video(
-            chat_id=chat_id,
+        return await bot.send_video(
             video=original_message.video.file_id,
             caption=text,
-            reply_markup=reply_markup,
+            **default_kwargs
         )
 
     # Кружочки видео (Video Note)
     elif original_message.video_note:
-        await bot.send_video_note(
-            chat_id=chat_id,
+        return await bot.send_video_note(
             video_note=original_message.video_note.file_id,
-            reply_markup=reply_markup,
+            **default_kwargs
         )
 
     # Голосовые сообщения (Voice)
     elif original_message.voice:
-        await bot.send_voice(
-            chat_id=chat_id,
+        return await bot.send_voice(
             voice=original_message.voice.file_id,
             caption=text,
-            reply_markup=reply_markup,
+            **default_kwargs
         )
 
     # Документ
     elif original_message.document:
-        await bot.send_document(
-            chat_id=chat_id,
+        return await bot.send_document(
             document=original_message.document.file_id,
             caption=text,
-            reply_markup=reply_markup,
+            **default_kwargs
         )
 
     # Аудио (музыка)
     elif original_message.audio:
-        await bot.send_audio(
-            chat_id=chat_id,
+        return await bot.send_audio(
             audio=original_message.audio.file_id,
             caption=text,
-            reply_markup=reply_markup,
             title=original_message.audio.title,
+            **default_kwargs
+
         )
 
     # Стикеры
     elif original_message.sticker:
-        await bot.send_sticker(
-            chat_id=chat_id,
+        return await bot.send_sticker(
             sticker=original_message.sticker.file_id,
-            reply_markup=reply_markup
+            **default_kwargs
         )
 
     # Анимации (GIF)
     elif original_message.animation:
-        await bot.send_animation(
-            chat_id=chat_id,
+        return await bot.send_animation(
             animation=original_message.animation.file_id,
             caption=text,
-            reply_markup=reply_markup
+            **default_kwargs
         )
 
     # Местоположение
     elif original_message.location:
-        await bot.send_location(
-            chat_id=chat_id,
+        return await bot.send_location(
             latitude=original_message.location.latitude,
             longitude=original_message.location.longitude,
-            reply_markup=reply_markup
+            **default_kwargs
         )
 
     # Контакты
     elif original_message.contact:
-        await bot.send_contact(
-            chat_id=chat_id,
+        return await bot.send_contact(
             phone_number=original_message.contact.phone_number,
             first_name=original_message.contact.first_name,
             last_name=original_message.contact.last_name,
-            reply_markup=reply_markup
+            **default_kwargs
         )
 
     # Опросы
     elif original_message.poll:
-        await bot.send_poll(
-            chat_id=chat_id,
+        return await bot.send_poll(
             question=original_message.poll.question,
             options=[option.text for option in original_message.poll.options],
-            reply_markup=reply_markup,
             is_anonymous=original_message.poll.is_anonymous,
-            type=original_message.poll.type
+            type=original_message.poll.type,
+            **default_kwargs
         )
 
     # Просто текст
     elif original_message.text:
-        await bot.send_message(
-            chat_id=chat_id,
+        return await bot.send_message(
             text=text,
-            reply_markup=reply_markup,
+            **default_kwargs
         )
 
 
