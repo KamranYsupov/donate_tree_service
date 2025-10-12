@@ -133,6 +133,7 @@ async def referral_handler(
         page_number=page_number,
         per_page=per_page
     )
+
     buttons = {}
     message_text = f"<b>Ваши рефералы (страница {page_number}):</b>\n\n"
     status_emoji_data = {
@@ -145,6 +146,13 @@ async def referral_handler(
     if paginator.has_next():
         buttons |= {"След. ▶": f"referrals_{page_number + 1}"}
 
+    buttons.update({"Отправить рассылку": f"referral_message_{page_number}"})
+
+    if len(list(buttons.keys())) == 3:
+        sizes = (2, 1)
+    else:
+        sizes = (1, 1)
+
     start_count = per_page * page_number - per_page + 1
     for user in paginator.get_page():
         user_status_emoji = status_emoji_data.get(user.status, "🆓",)
@@ -153,7 +161,7 @@ async def referral_handler(
 
     reply_markup = get_donate_keyboard(
         buttons=buttons,
-        sizes=(2,)
+        sizes=sizes
     )
 
     return message_text, reply_markup

@@ -28,6 +28,7 @@ class Container(containers.DeclarativeContainer):
             "app.handlers.start",
             "app.handlers.info",
             "app.handlers.ban_user",
+            "app.handlers.referral_message",
             "app.middlewares.ban_user",
             "app.tasks.donate",
             "app.utils.excel",

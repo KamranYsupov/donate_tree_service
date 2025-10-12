@@ -3,6 +3,7 @@ import random
 from functools import wraps
 
 from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart, CommandObject, Command
 from dependency_injector.wiring import inject, Provide
@@ -65,19 +66,50 @@ async def command_start(
         reply_markup=get_donate_keyboard(
             buttons={
                 "Да": f"yes_{sponsor_user_id}",
-                "Нет": "no",
+                "Нет": "delete_msg",
             },
             sizes=(2, 1),
         ),
     )
 
 
-@start_router.callback_query(F.data == "no")
+@start_router.callback_query(F.data == "delete_msg")
 @inject
-async def cancel_start_handler(
+async def delete_msg_handler(
         callback: CallbackQuery,
 ) -> None:
     await callback.message.delete()
+
+
+
+
+@start_router.message(F.text.lower() == "отмена ❌")
+@inject
+async def cancel_handler(
+        message: Message,
+        state: FSMContext,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+):
+    current_user = await telegram_user_service.get_telegram_user(
+        user_id=message.from_user.id
+    )
+
+    await message.answer(
+        text="Действие отменено",
+        reply_markup=get_reply_keyboard(current_user)
+    )
+
+    await state.clear()
+
+@start_router.callback_query(F.data == "cancel")
+async def cancel_callback_handler(
+        callback: CallbackQuery,
+        state: FSMContext
+):
+    await callback.message.edit_text(text="Действие отменено")
+    await state.clear()
 
 
 @start_router.message(Command("admin"))
@@ -138,9 +170,11 @@ async def admin(
 #     user = generate_random_user()
 #     user.status = status
 #     user.sponsor_user_id = current_user.user_id
+#     user.depth_level = current_user.depth_level + 1
 #
 #     fake_user = await telegram_user_service.create_telegram_user(
-#         user=user
+#         user=user,
+#         sponsor=current_user
 #     )
 #
 #     created_matrix_dict = {"owner_id": fake_user.id, "status": status}
@@ -161,7 +195,7 @@ async def admin(
 #     )
 #
 #
-# # # Тут функции только для тестов поэтому нет DRY
+# # Тут функции только для тестов поэтому нет DRY
 # @start_router.message(Command("create_admin"))
 # @inject
 # @commit_and_close_session
@@ -176,7 +210,7 @@ async def admin(
 #     if admin_user:
 #         return
 #     user = generate_random_user()
-#     user.status = DonateStatus.BASE
+#     user.status = DonateStatus.BRILLIANT
 #     user.is_admin = True
 #
 #     admin_user = await telegram_user_service.create_telegram_user(user=user)
@@ -190,7 +224,7 @@ async def admin(
 #         f"✅ Готово - https://t.me/Kamranchik_Bot?start={admin_user.user_id}",
 #     )
 #
-#
+
 # @start_router.message(F.text.startswith("fakeadmin_"))
 # @inject
 # @commit_and_close_session

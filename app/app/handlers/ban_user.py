@@ -23,27 +23,6 @@ class BanUserState(StatesGroup):
     username = State()
 
 
-@ban_user_router.message(F.text.lower() == 'отмена ❌')
-@inject
-async def cancel_handler(
-        message: Message,
-        state: FSMContext,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-):
-    current_user = await telegram_user_service.get_telegram_user(
-        user_id=message.from_user.id
-    )
-
-    await message.answer(
-        text="Действие отменено",
-        reply_markup=get_reply_keyboard(current_user)
-    )
-
-    await state.clear()
-
-
 @ban_user_router.callback_query(F.data == 'ban_user')
 async def start_ban_user_context(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(BanUserState.username)
