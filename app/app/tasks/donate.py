@@ -3,6 +3,7 @@ import uuid
 from typing import Optional
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramAPIError
 from celery import shared_task
 
 from app.core.container import Container
@@ -40,7 +41,7 @@ async def check_is_donate_confirmed_or_delete_donate(
 
     try:
         await bot.send_message(chat_id=donate_sender_user_id, text='Время отправки подарка вышло.')
-    except Exception:
+    except TelegramAPIError:
         pass
 
 

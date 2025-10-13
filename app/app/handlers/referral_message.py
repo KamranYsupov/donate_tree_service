@@ -2,7 +2,7 @@ from typing import List
 
 import loguru
 from aiogram import Router, F, html
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery, PhotoSize
@@ -279,5 +279,5 @@ async def confirm_referrals_send_message_handler(
                 original_message=state_data["complete_message"],
                 reply_to_message_id=message.message_id,
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             continue

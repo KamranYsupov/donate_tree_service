@@ -1,5 +1,5 @@
 from aiogram import Router, F, html
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -120,7 +120,7 @@ async def confirm_ban_user_callback_handler(
                 f"свяжитесь со службой поддержки. @{settings.support_username}"
             )
         )
-    except TelegramBadRequest:
+    except TelegramAPIError:
         pass
 
 
@@ -230,5 +230,5 @@ async def confirm_гтban_user_callback_handler(
             chat_id=telegram_user.user_id,
             text="Ваш аккаунт разблокирован!"
         )
-    except TelegramBadRequest:
+    except TelegramAPIError:
         pass

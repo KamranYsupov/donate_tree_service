@@ -5,7 +5,7 @@ import uuid
 import loguru
 from aiogram import Router, F, Bot
 from aiogram.enums import ChatMemberStatus
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -111,7 +111,7 @@ async def subscription_checker(
                 chat_id=sponsor.user_id,
                 text=f"По вашей ссылке зарегистрировался пользователь @{current_user.username}."
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             pass
 
     await callback.message.answer(
@@ -343,7 +343,7 @@ async def donate_handler(
                     buttons={"Подтвердить подарок": f"first_{transaction.id}"}
                 ),
             )
-        except Exception:
+        except TelegramAPIError:
             pass
 
     await callback.message.delete()
@@ -788,7 +788,7 @@ async def confirm_transaction(
                 chat_id=sender_user.user_id,
                 reply_markup=get_reply_keyboard(sender_user),
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             pass
 
         try:
@@ -800,7 +800,7 @@ async def confirm_transaction(
                 text=channel_donate_confirm_text,
                 chat_id=settings.donates_channel_id,
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             pass
 
 
@@ -847,7 +847,7 @@ async def confirm_admin_transaction(
                 parse_mode="HTML",
                 reply_markup=get_reply_keyboard(sponsor),
             )
-    except Exception:
+    except TelegramAPIError:
         pass
 
     sender_user = await telegram_user_service.get_telegram_user(
@@ -881,7 +881,7 @@ async def confirm_admin_transaction(
                 chat_id=sender_user.user_id,
                 reply_markup=get_reply_keyboard(sender_user),
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             pass
         try:
             channel_donate_confirm_text = get_donate_confirm_message(
@@ -892,7 +892,7 @@ async def confirm_admin_transaction(
                 text=channel_donate_confirm_text,
                 chat_id=settings.donates_channel_id,
             )
-        except TelegramBadRequest:
+        except TelegramAPIError:
             pass
 
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
