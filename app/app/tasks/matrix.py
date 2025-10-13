@@ -58,8 +58,8 @@ async def send_matrix_triad_notification(
 def send_matrix_triad_notification_task(
         matrix_id: uuid.UUID,
         matrix_owner_user_id: int | None = None,
-) -> Message:
-    return loop.run_until_complete(
+) -> None:
+    loop.run_until_complete(
         send_matrix_triad_notification(
             matrix_id,
             matrix_owner_user_id

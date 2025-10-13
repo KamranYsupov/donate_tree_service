@@ -20,8 +20,8 @@ from app.tasks.const import loop
 def send_message_task(
         chat_id: int | str,
         text: str,
-) -> Message:
-    return loop.run_until_complete(
+):
+    loop.run_until_complete(
         bot.send_message(
             chat_id=chat_id,
             text=text
