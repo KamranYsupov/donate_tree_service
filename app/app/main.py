@@ -15,6 +15,7 @@ from app.middlewares.session_middleware import SQLAlchemySessionMiddleware
 
 from app.core.container import Container
 from app import handlers
+from app.middlewares.subscriptions import subscription_checker_middleware
 
 from loader import dp, bot
 
@@ -30,6 +31,7 @@ async def main(container: Container):
         dp.message.middleware(rate_limit_middleware)
         dp.message.middleware(SQLAlchemySessionMiddleware(sync_session=sync_session))
         dp.message.middleware(ban_user_middleware)
+        dp.message.middleware(subscription_checker_middleware)
         dp.callback_query.middleware(ban_user_middleware)
 
         await dp.start_polling(bot)

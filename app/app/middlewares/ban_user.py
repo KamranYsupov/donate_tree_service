@@ -9,7 +9,6 @@ from app.core.config import settings
 
 
 @inject
-@commit_and_close_session
 async def ban_user_middleware(
         handler,
         event: Message | CallbackQuery,

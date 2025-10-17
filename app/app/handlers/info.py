@@ -41,10 +41,15 @@ async def about_handler(
         text="Канал Подарков 🎁",
         url=settings.donates_channel_link
     )
+    web_app_link_button = InlineKeyboardButton(
+        text="Знакомства",
+        url=settings.web_app_link
+    )
     presentation_keyboard.add(
         presentation_button,
         chat_link_button,
-        donate_channel_link_button
+        donate_channel_link_button,
+        web_app_link_button,
     )
     presentation_keyboard.add()
 
@@ -202,10 +207,30 @@ async def referral_message_handler(
         await message.answer(
             text=message_text,
             reply_markup=reply_markup,
-            parse_mode='HTML'
         )
+
+    photo = FSInputFile("app/media/gift_mafia_logo.jpg")
+    gift_mafia_keyboard = InlineKeyboardBuilder()
+    registration_link = f"{settings.bot_link}?start={current_user.user_id}"
+    registration_button = InlineKeyboardButton(
+        text="🚀 РЕГИСТРАЦИЯ 🚀",
+        url=registration_link
+    )
+    gift_mafia_keyboard.add(registration_button)
+    await message.answer_photo(
+        photo=photo,
+        caption=html.bold((
+            "🔥 Жаркая премьера - ‘’GiftMafia’’\n\n"
+            "💰 Супер алгоритм, $129’960 многократно!\n\n"
+            "👑 Стань получателем и забери свою долю!\n\n"
+            "👥 Играй вместе с друзьями, получай денежные подарки и наслаждайся жизнью!\n\n"
+            "🎟️ Старт, всего $10.\n\n"
+            f"{registration_link}"
+        )),
+        reply_markup=gift_mafia_keyboard.as_markup(),
+    )
     await message.answer(
-        f"Ваша реферальная ссылка: {settings.bot_link}?start={current_user.user_id}",
+        f"Ваша реферальная ссылка: {registration_link}",
     )
 
 

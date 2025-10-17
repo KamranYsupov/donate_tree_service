@@ -30,6 +30,7 @@ class Container(containers.DeclarativeContainer):
             "app.handlers.ban_user",
             "app.handlers.referral_message",
             "app.middlewares.ban_user",
+            "app.middlewares.subscriptions",
             "app.tasks.donate",
             "app.utils.excel",
         ]
