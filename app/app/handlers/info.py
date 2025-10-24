@@ -55,8 +55,6 @@ async def about_handler(
 
     await message.answer_photo(
         photo=base_photo,
-        caption="GiftMafia - сообщество в котором друзья обмениваются \n"
-                "денежными подарками и играют в игру Мафия.",
         reply_markup=presentation_keyboard.adjust(1).as_markup(),
     )
 
