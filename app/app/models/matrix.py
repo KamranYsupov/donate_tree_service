@@ -1,4 +1,5 @@
 import uuid
+import enum
 
 from sqlalchemy import Column, UUID, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import JSONB
@@ -11,6 +12,11 @@ from app.db.base import Base
 from app.models.telegram_user import DonateStatus
 
 
+class MatrixBuildType(enum.Enum):
+    BINARY = "Бинар"
+    TRINARY = "Тринар"
+
+
 class Matrix(UUIDMixin, TimestampedMixin, Base):
     __tablename__ = "matrices"
 
@@ -21,6 +27,7 @@ class Matrix(UUIDMixin, TimestampedMixin, Base):
         index=True,
     )
     status = Column(Enum(DonateStatus), default=DonateStatus.NOT_ACTIVE, index=True)
+    build_type = Column(Enum(MatrixBuildType), default=MatrixBuildType.TRINARY, index=True)
     matrices = Column(mutable_json_type(dbtype=JSONB, nested=True), index=True, default={})
     matrix_telegram_usernames = Column(
         mutable_json_type(dbtype=JSONB, nested=True), index=True, default={}

@@ -55,7 +55,7 @@ services:
       context: .
       dockerfile: backend.dockerfile
     command: >
-      python app/main.py
+      python app/reloader.py
     env_file:
       - .env
 

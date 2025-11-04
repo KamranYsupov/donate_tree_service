@@ -135,6 +135,32 @@ async def donations_menu_handler(
         if isinstance(aiogram_type, Message) \
         else aiogram_type.message.edit_text
 
+    await telegram_method(
+        text="Выберите тип столов:",
+        reply_markup=get_donate_keyboard(
+            buttons={
+                "Тринар": "donations_trinary",
+                "Бинар": "donations_binary",
+            },
+            sizes=(1, 1)
+        )
+    )
+@donate_router.callback_query(F.data == "donations")
+@donate_router.message(F.text == "💰 МОИ СТОЛЫ 💰")
+@inject
+async def donations_menu_handler(
+        aiogram_type: Message | CallbackQuery,
+        telegram_user_service: TelegramUserService = Provide[
+            Container.telegram_user_service
+        ],
+        donate_confirm_service: DonateConfirmService = Provide[
+            Container.donate_confirm_service
+        ],
+) -> None:
+    telegram_method = aiogram_type.answer \
+        if isinstance(aiogram_type, Message) \
+        else aiogram_type.message.edit_text
+
     default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
 
     current_user = await telegram_user_service.get_telegram_user(
