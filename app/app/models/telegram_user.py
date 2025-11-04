@@ -18,30 +18,72 @@ from app.db.base import Base
 from app.models.mixins import TimestampedMixin, UUIDMixin, AbstractTelegramUser
 
 
+class MatrixBuildType(enum.Enum):
+    BINARY = "Бинар"
+    TRINARY = "Тринар"
+
+
 class DonateStatus(enum.Enum):
     NOT_ACTIVE = "не активирован"
-    BASE = "Стартовый - $10"
-    BRONZE = "Бронза - $30"
-    SILVER = "Серебро - $100"
-    GOLD = "Золото - $300"
-    PLATINUM = "Платина - $1000"
-    DIAMOND = "Алмаз - $3000"
-    BRILLIANT = "Бриллиант - $10000"
+    BASE = "Стартовый"
+    BRONZE = "Бронза"
+    SILVER = "Серебро"
+    GOLD = "Золото"
+    PLATINUM = "Платина"
+    DIAMOND = "Алмаз"
+    BRILLIANT = "Бриллиант"
 
-    def get_status_donate_value(self) -> int:
+    def get_status_donate_value(
+            self,
+            matrix_build_type: MatrixBuildType = MatrixBuildType.TRINARY
+    ) -> int:
         """Получение суммы доната"""
-        return int(self.value.split('$')[-1])
+        if matrix_build_type == MatrixBuildType.TRINARY:
+            donations_data = self.get_trinary_donations_data()
+        elif matrix_build_type == MatrixBuildType.BINARY:
+            donations_data = self.get_binary_donations_data()
+        else:
+            raise TypeError("Неверный объект типа \"MatrixBuildType\"")
 
+        return donations_data.get(self)
 
-status_list = [
-    DonateStatus.BASE,
-    DonateStatus.BRONZE,
-    DonateStatus.SILVER,
-    DonateStatus.GOLD,
-    DonateStatus.PLATINUM,
-    DonateStatus.DIAMOND,
-    DonateStatus.BRILLIANT,
-]
+    @classmethod
+    def get_status_list(cls) -> list:
+        return [
+            cls.BASE,
+            cls.BRONZE,
+            cls.SILVER,
+            cls.GOLD,
+            cls.PLATINUM,
+            cls.DIAMOND,
+            cls.BRILLIANT,
+        ]
+
+    @classmethod
+    def get_binary_donations_data(cls) -> dict:
+        return {
+            cls.BASE: 10,
+            cls.BRONZE: 20,
+            cls.SILVER: 40,
+            cls.GOLD: 80,
+            cls.PLATINUM: 160,
+            cls.DIAMOND: 320,
+            cls.BRILLIANT: 740,
+        }
+
+    @classmethod
+    def get_trinary_donations_data(cls) -> dict:
+        return {
+            cls.BASE: 10,
+            cls.BRONZE: 30,
+            cls.SILVER: 100,
+            cls.GOLD: 300,
+            cls.PLATINUM: 160,
+            cls.DIAMOND: 320,
+            cls.BRILLIANT: 740,
+        }
+
+status_list = DonateStatus.get_status_list()
 status_emoji_list = [
     "1️⃣" ,
     "2️⃣" ,
@@ -66,7 +108,8 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
 
     __tablename__ = "telegram_users"
 
-    status = Column(Enum(DonateStatus), default=DonateStatus.NOT_ACTIVE)
+    trinary_status = Column(Enum(DonateStatus), default=DonateStatus.NOT_ACTIVE)
+    binary_status = Column(Enum(DonateStatus), default=DonateStatus.NOT_ACTIVE)
     sponsor_user_id = Column(
         BigInteger,
         ForeignKey("telegram_users.user_id"),

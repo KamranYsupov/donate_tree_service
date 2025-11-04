@@ -9,12 +9,7 @@ from sqlalchemy_json import mutable_json_type
 
 from .mixins import UUIDMixin, TimestampedMixin
 from app.db.base import Base
-from app.models.telegram_user import DonateStatus
-
-
-class MatrixBuildType(enum.Enum):
-    BINARY = "Бинар"
-    TRINARY = "Тринар"
+from app.models.telegram_user import DonateStatus, MatrixBuildType
 
 
 class Matrix(UUIDMixin, TimestampedMixin, Base):
