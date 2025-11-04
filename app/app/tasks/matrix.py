@@ -19,7 +19,7 @@ from app.tasks.const import (
 )
 
 
-async def send_matrix_triad_notification(
+async def send_first_level_notification(
         matrix_id: uuid.UUID,
         matrix_owner_user_id: int | None = None,
 ) -> Message:
@@ -55,12 +55,12 @@ async def send_matrix_triad_notification(
     )
 
 @celery_app.task
-def send_matrix_triad_notification_task(
+def send_matrix_first_level_notification_task(
         matrix_id: uuid.UUID,
         matrix_owner_user_id: int | None = None,
 ) -> None:
     loop.run_until_complete(
-        send_matrix_triad_notification(
+        send_first_level_notification(
             matrix_id,
             matrix_owner_user_id
         )

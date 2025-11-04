@@ -7,7 +7,7 @@ from dependency_injector.wiring import inject
 
 from app.repositories.telegram_user import RepositoryTelegramUser
 from app.repositories.matrix import RepositoryMatrix
-from app.models.telegram_user import TelegramUser, DonateStatus
+from app.models.telegram_user import TelegramUser, DonateStatus, MatrixBuildType
 from app.models.matrix import Matrix
 from app.services.matrix_service import MatrixService
 from app.services.telegram_user_service import TelegramUserService
@@ -27,21 +27,21 @@ class DonateService:
         self._repository_matrix = repository_matrix
 
     @staticmethod
-    def get_donate_status(donate_sum: int) -> DonateStatus:
-        if donate_sum == 10:
-            return DonateStatus.BASE
-        elif donate_sum == 30:
-            return DonateStatus.BRONZE
-        elif donate_sum == 100:
-            return DonateStatus.SILVER
-        elif donate_sum == 300:
-            return DonateStatus.GOLD
-        elif donate_sum == 1000:
-            return DonateStatus.PLATINUM
-        elif donate_sum == 3000:
-            return DonateStatus.DIAMOND
-        elif donate_sum == 10000:
-            return DonateStatus.BRILLIANT
+    def get_donate_status(
+            donate_sum: int,
+            matrix_build_type: MatrixBuildType = MatrixBuildType.TRINARY
+    ) -> DonateStatus | None:
+        donate_status_data: dict[DonateStatus, int] = DonateStatus.get_donate_status_data(
+            matrix_build_type
+        )
+
+        for status, value in donate_status_data.items():
+            loguru.logger.info(str(value))
+            loguru.logger.info(str(donate_sum))
+            if int(value) == int(donate_sum):
+                return status
+
+        return None
 
 
     @staticmethod

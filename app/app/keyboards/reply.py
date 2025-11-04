@@ -12,7 +12,10 @@ def get_reply_keyboard(current_user: TelegramUser):
             KeyboardButton(text="💰 МОИ СТОЛЫ 💰"),
         ]
     ]
-    if current_user.status.value != DonateStatus.NOT_ACTIVE.value:
+    if (
+        current_user.trinary_status != DonateStatus.NOT_ACTIVE
+        and current_user.binary_status != DonateStatus.NOT_ACTIVE
+    ):
         keyboard.append([KeyboardButton(text="👫 ПРИГЛАСИТЬ ДРУЗЕЙ 👫")])
 
     reply_keyboard = ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)

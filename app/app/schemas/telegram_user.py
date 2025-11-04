@@ -11,8 +11,11 @@ class TelegramUserEntity(BaseModel):
     first_name: str | None = Field(title="Имя", default=None)
     last_name: str | None = Field(title="Фамилия", default=None)
     sponsor_user_id: int | None = Field(title="ID спонсора", default=None)
-    status: DonateStatus | str = Field(
-        title="Статус доната", default=DonateStatus.NOT_ACTIVE
+    trinary_status: DonateStatus | str = Field(
+        title="Тринарный статус", default=DonateStatus.NOT_ACTIVE
+    )
+    binary_status: DonateStatus | str = Field(
+        title="Бинарный статус", default=DonateStatus.NOT_ACTIVE
     )
     invites_count: int = Field(title="Число приглашений", default=0)
     donates_sum: int = Field(title="Сумма донатов", default=0)

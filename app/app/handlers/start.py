@@ -2,6 +2,7 @@ import datetime
 import random
 from functools import wraps
 
+import loguru
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
@@ -19,7 +20,7 @@ from app.models.telegram_user import status_list
 from app.services.matrix_service import MatrixService
 from app.utils.sponsor import get_callback_value
 from app.services.donate_service import DonateService
-from app.models.telegram_user import DonateStatus
+from app.models.telegram_user import DonateStatus, MatrixBuildType
 from app.db.commit_decorator import commit_and_close_session
 from app.keyboards.reply import get_reply_keyboard
 from app.utils.matrix import get_matrices_length
@@ -55,7 +56,10 @@ async def command_start(
     if not sponsor:
         await message.answer("Неправильная ссылка")
         return
-    if sponsor.status.value == DonateStatus.NOT_ACTIVE.value:
+    if (
+            sponsor.trinary_status == DonateStatus.NOT_ACTIVE
+            and sponsor.binary_status == DonateStatus.NOT_ACTIVE
+    ):
         await message.answer("Неправильная ссылка")
         return
 
@@ -132,7 +136,8 @@ async def admin(
 
     user_dict["user_id"] = user_id
     user_dict["is_admin"] = True
-    user_dict["status"] = DonateStatus.BRILLIANT
+    user_dict["trinary_status"] = DonateStatus.BRILLIANT
+    user_dict["binary_status"] = DonateStatus.BRILLIANT
     user_dict["depth_level"] = 0
     user = TelegramUserEntity(**user_dict)
 
@@ -140,8 +145,20 @@ async def admin(
 
     for status in status_list:
         matrix_dict = {"owner_id": admin_user.id, "status": status}
-        matrix = MatrixEntity(**matrix_dict)
-        await matrix_service.create_matrix(matrix=matrix)
+
+
+        await matrix_service.create_matrix(
+            matrix=MatrixEntity(
+                **matrix_dict,
+                build_type=MatrixBuildType.TRINARY
+            )
+        )
+        await matrix_service.create_matrix(
+            matrix=MatrixEntity(
+                **matrix_dict,
+                build_type=MatrixBuildType.BINARY
+            )
+        )
 
     await message.answer(
         f"✅ Готово - {settings.bot_link}?start={message.from_user.id}",
@@ -160,15 +177,29 @@ async def admin(
 #         donate_service: DonateService = Provide[Container.donate_service],
 #         matrix_service: MatrixService = Provide[Container.matrix_service],
 # ):
-#     donate_sum = int(get_callback_value(message.text))
-#     status = donate_service.get_donate_status(donate_sum)
+#     build_type_str = message.text.split("_")[1]
+#     donate_sum = int(message.text.split("_")[-1])
+#
+#     build_type = MatrixBuildType.BINARY \
+#         if build_type_str == "b" else MatrixBuildType.TRINARY
+#
+#     status = donate_service.get_donate_status(
+#         donate_sum=donate_sum,
+#         matrix_build_type=build_type
+#     )
+#     loguru.logger.info(str(type(status)))
 #
 #     current_user = await telegram_user_service.get_telegram_user(
 #         user_id=message.from_user.id
 #     )
 #
 #     user = generate_random_user()
-#     user.status = status
+#
+#     if build_type == MatrixBuildType.TRINARY:
+#         user.trinary_status = status
+#     else:
+#         user.binary_status = status
+#
 #     user.sponsor_user_id = current_user.user_id
 #     user.depth_level = current_user.depth_level + 1
 #
@@ -177,7 +208,11 @@ async def admin(
 #         sponsor=current_user
 #     )
 #
-#     created_matrix_dict = {"owner_id": fake_user.id, "status": status}
+#     created_matrix_dict = {
+#         "owner_id": fake_user.id,
+#         "status": status,
+#         "build_type": build_type,
+#     }
 #     created_matrix_entity = MatrixEntity(**created_matrix_dict)
 #     created_matrix = await matrix_service.create_matrix(matrix=created_matrix_entity)
 #
@@ -210,21 +245,32 @@ async def admin(
 #     if admin_user:
 #         return
 #     user = generate_random_user()
-#     user.status = DonateStatus.BRILLIANT
+#     user.trinary_status = DonateStatus.BRILLIANT
+#     user.binary_status = DonateStatus.BRILLIANT
 #     user.is_admin = True
 #
 #     admin_user = await telegram_user_service.create_telegram_user(user=user)
 #
 #     for status in status_list:
 #         matrix_dict = {"owner_id": admin_user.id, "status": status}
-#         matrix = MatrixEntity(**matrix_dict)
-#         await matrix_service.create_matrix(matrix=matrix)
+#         await matrix_service.create_matrix(
+#             matrix=MatrixEntity(
+#                 **matrix_dict,
+#                 build_type=MatrixBuildType.TRINARY
+#             )
+#         )
+#         await matrix_service.create_matrix(
+#             matrix=MatrixEntity(
+#                 **matrix_dict,
+#                 build_type=MatrixBuildType.BINARY
+#             )
+#         )
 #
 #     await message.answer(
 #         f"✅ Готово - https://t.me/Kamranchik_Bot?start={admin_user.user_id}",
 #     )
 #
-
+#
 # @start_router.message(F.text.startswith("fakeadmin_"))
 # @inject
 # @commit_and_close_session
@@ -236,26 +282,44 @@ async def admin(
 #         donate_service: DonateService = Provide[Container.donate_service],
 #         matrix_service: MatrixService = Provide[Container.matrix_service],
 # ):
-#     donate_sum = int(get_callback_value(message.text))
-#     status = donate_service.get_donate_status(donate_sum)
+#     build_type_str = message.text.split("_")[1]
+#     donate_sum = int(message.text.split("_")[-1])
+#
+#     build_type = MatrixBuildType.BINARY \
+#         if build_type_str == "b" else MatrixBuildType.TRINARY
+#
+#     status = donate_service.get_donate_status(
+#         donate_sum=donate_sum,
+#         matrix_build_type=build_type
+#     )
 #     admin_user = await telegram_user_service.get_telegram_user(
 #         is_admin=True,
 #     )
 #
 #     user = generate_random_user()
-#     user.status = status
+#     if build_type == MatrixBuildType.TRINARY:
+#         user.trinary_status = status
+#     else:
+#         user.binary_status = status
+#
 #     user.sponsor_user_id = admin_user.user_id
 #
 #     fake_user = await telegram_user_service.create_telegram_user(
 #         user=user
 #     )
-#     matrix_dict = {"owner_id": fake_user.id, "status": status}
-#     matrix = MatrixEntity(**matrix_dict)
-#     created_matrix = await matrix_service.create_matrix(matrix=matrix)
+#     matrix_dict = {
+#         "owner_id": fake_user.id,
+#         "status": status,
+#         "build_type": build_type,
+#     }
+#     created_matrix = await matrix_service.create_matrix(
+#         matrix=MatrixEntity(**matrix_dict)
+#     )
 #
 #     admin_matrix = await matrix_service.get_matrix(
 #         owner_id=admin_user.id,
 #         status=status,
+#         build_type=build_type,
 #     )
 #     await matrix_service.add_to_matrix(admin_matrix, created_matrix, fake_user)
 #
@@ -265,8 +329,8 @@ async def admin(
 #         f"{settings.bot_link}?start={fake_user.user_id}",
 #         parse_mode="HTML",
 #     )
-#
-#
+
+
 def generate_random_user():
     return TelegramUserEntity(
         user_id=random.randint(1, 1000),

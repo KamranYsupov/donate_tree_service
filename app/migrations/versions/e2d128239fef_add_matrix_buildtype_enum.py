@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade():
     # Создание типа ENUM
-    op.execute("CREATE TYPE matrixbuildtype AS ENUM ('Бинар', 'Тринар')")
+    op.execute("CREATE TYPE matrixbuildtype AS ENUM ('BINARY', 'TRINARY')")
 
 def downgrade():
     # Удаление типа ENUM

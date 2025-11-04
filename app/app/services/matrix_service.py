@@ -19,7 +19,8 @@ from app.utils.matrix import (
 )
 from app.utils.sort import get_sorted_objects_by_ids
 from app.utils.matrix import find_first_level_matrix_id
-from app.tasks.matrix import send_matrix_triad_notification_task
+from app.tasks.matrix import send_matrix_first_level_notification_task
+from app.models.telegram_user import MatrixBuildType
 
 
 class MatrixService:
@@ -91,10 +92,17 @@ class MatrixService:
     ) -> None:
         current_time = datetime.datetime.now()
         created_matrix.created_at = current_time
+        build_type = matrix_to_add.build_type
+        level_length = 2 if build_type == MatrixBuildType.BINARY else 3
+        second_level_length = level_length * level_length
 
         matrix_owner = self._repository_telegram_user.get(id=matrix_to_add.owner_id)
-        if get_matrices_length(matrix_to_add.matrices) == 12 and matrix_owner.is_admin:
-            matrix_to_add_dict = {"owner_id": matrix_owner.id, "status": matrix_to_add.status}
+        if get_matrices_length(matrix_to_add.matrices) == second_level_length and matrix_owner.is_admin:
+            matrix_to_add_dict = {
+                "owner_id": matrix_owner.id,
+                "status": matrix_to_add.status,
+                "build_type": build_type,
+            }
             matrix_to_add_entity = MatrixEntity(**matrix_to_add_dict)
             matrix_to_add = self._repository_matrix.create(obj_in=matrix_to_add_entity)
             (matrix_to_add.matrices,
@@ -105,12 +113,12 @@ class MatrixService:
         matrix_telegram_user_json = {
             f"{current_user.username} {created_matrix.id} {current_time}": []
         }
-        if len(matrix_to_add.matrices.keys()) < 3:
+        if len(matrix_to_add.matrices.keys()) < level_length:
             matrix_to_add.telegram_users.append(current_user.user_id)
             matrix_to_add.matrices.update(matrix_json)
             matrix_to_add.matrix_telegram_usernames.update(matrix_telegram_user_json)
 
-            send_matrix_triad_notification_task.delay(
+            send_matrix_first_level_notification_task.delay(
                 matrix_id=matrix_to_add.id,
                 matrix_owner_user_id=matrix_owner.user_id,
             )
@@ -137,7 +145,7 @@ class MatrixService:
             sorted_first_level_matrices = sorted(first_level_matrices, key=lambda x: x.created_at)
 
             for first_level_matrix in sorted_first_level_matrices:
-                if len(first_level_matrix.matrices.keys()) < 3:
+                if len(first_level_matrix.matrices.keys()) < level_length:
                     first_level_matrix_owner = self._repository_telegram_user.get(
                         id=first_level_matrix.owner_id
                     )
@@ -152,7 +160,7 @@ class MatrixService:
                      ]
                      .append(f"{current_user.username} {created_matrix.id} {current_time}"))
 
-                    send_matrix_triad_notification_task.delay(
+                    send_matrix_first_level_notification_task.delay(
                         matrix_id=first_level_matrix.id,
                         matrix_owner_user_id=first_level_matrix_owner.user_id,
                     )

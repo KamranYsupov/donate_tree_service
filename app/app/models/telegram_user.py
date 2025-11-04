@@ -38,14 +38,23 @@ class DonateStatus(enum.Enum):
             matrix_build_type: MatrixBuildType = MatrixBuildType.TRINARY
     ) -> int:
         """Получение суммы доната"""
+        donate_status_data = self.get_donate_status_data(matrix_build_type)
+
+        return donate_status_data.get(self)
+
+    @classmethod
+    def get_donate_status_data(
+            cls,
+            matrix_build_type: MatrixBuildType = MatrixBuildType.TRINARY
+    ) -> dict:
         if matrix_build_type == MatrixBuildType.TRINARY:
-            donations_data = self.get_trinary_donations_data()
+            donate_status_data = cls.get_trinary_donations_data()
         elif matrix_build_type == MatrixBuildType.BINARY:
-            donations_data = self.get_binary_donations_data()
+            donate_status_data = cls.get_binary_donations_data()
         else:
             raise TypeError("Неверный объект типа \"MatrixBuildType\"")
 
-        return donations_data.get(self)
+        return donate_status_data
 
     @classmethod
     def get_status_list(cls) -> list:
@@ -78,9 +87,9 @@ class DonateStatus(enum.Enum):
             cls.BRONZE: 30,
             cls.SILVER: 100,
             cls.GOLD: 300,
-            cls.PLATINUM: 160,
-            cls.DIAMOND: 320,
-            cls.BRILLIANT: 740,
+            cls.PLATINUM: 1000,
+            cls.DIAMOND: 3000,
+            cls.BRILLIANT: 10000,
         }
 
 status_list = DonateStatus.get_status_list()
