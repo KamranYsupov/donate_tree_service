@@ -10,6 +10,7 @@ from app.models.telegram_user import TelegramUser
 from app.models.matrix import Matrix
 from app.utils.matrix import get_my_team_telegram_usernames, get_sorted_matrices
 from app.utils.pagination import Paginator
+from app.models.telegram_user import MatrixBuildType
 
 
 def get_donate_confirm_message(
@@ -36,6 +37,7 @@ def get_donate_confirm_message(
 
 def get_user_statuses_statistic_message(
         users: list[TelegramUser],
+        matrix_build_type: MatrixBuildType
 ) -> str:
     status_emoji_data = {
         status_list[i]: status_emoji_list[i]
@@ -45,11 +47,11 @@ def get_user_statuses_statistic_message(
     statuses_data.update({status: 0 for status in status_emoji_list})
 
     for user in users:
-        if user.status == DonateStatus.NOT_ACTIVE:
+        if user.get_status(matrix_build_type) == DonateStatus.NOT_ACTIVE:
             statuses_data["🆓"] += 1
             continue
 
-        statuses_data[status_emoji_data[user.status]] += 1
+        statuses_data[status_emoji_data[user.get_status(matrix_build_type)]] += 1
 
     message = ""
 

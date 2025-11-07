@@ -40,7 +40,10 @@ async def check_is_donate_confirmed_or_delete_donate(
     await donate_confirm_service.cancel_donate_with_transactions(donate_id=donate_id)
 
     try:
-        await bot.send_message(chat_id=donate_sender_user_id, text='Время отправки подарка вышло.')
+        await bot.send_message(
+            chat_id=donate_sender_user_id,
+            text="Время отправки подарка вышло."
+        )
     except TelegramAPIError:
         pass
 

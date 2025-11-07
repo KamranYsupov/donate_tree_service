@@ -21,7 +21,7 @@ from app.services.donate_service import DonateService
 from app.schemas.telegram_user import TelegramUserEntity
 from app.keyboards.donate import get_donate_keyboard
 from app.utils.sponsor import get_callback_value
-from app.models.telegram_user import DonateStatus
+from app.models.telegram_user import DonateStatus, MatrixBuildType
 from app.core.config import settings
 from app.services.matrix_service import MatrixService
 from app.schemas.matrix import MatrixEntity
@@ -30,7 +30,7 @@ from app.db.commit_decorator import commit_and_close_session
 from app.keyboards.reply import get_reply_keyboard
 from app.utils.pagination import Paginator
 from app.utils.sort import get_reversed_dict
-from app.utils.sponsor import check_telegram_user_status
+from app.utils.sponsor import check_is_second_status_higher
 from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
 from app.utils.texts import get_donate_confirm_message
 from app.utils.excel import export_users_to_excel
@@ -139,17 +139,16 @@ async def donations_menu_handler(
         text="Выберите тип столов:",
         reply_markup=get_donate_keyboard(
             buttons={
-                "Тринар": "donations_trinary",
-                "Бинар": "donations_binary",
+                "Тринар": "donations_t",
+                "Бинар": "donations_b",
             },
             sizes=(1, 1)
         )
     )
-@donate_router.callback_query(F.data == "donations")
-@donate_router.message(F.text == "💰 МОИ СТОЛЫ 💰")
+@donate_router.callback_query(F.data.startswith("donations_"))
 @inject
 async def donations_menu_handler(
-        aiogram_type: Message | CallbackQuery,
+        callback: CallbackQuery,
         telegram_user_service: TelegramUserService = Provide[
             Container.telegram_user_service
         ],
@@ -157,19 +156,28 @@ async def donations_menu_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    telegram_method = aiogram_type.answer \
-        if isinstance(aiogram_type, Message) \
-        else aiogram_type.message.edit_text
+    build_type_str = callback.data.split("_")[-1]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
 
-    default_buttons = {"Транзакции 💳": "transactions", "АКТИВНЫЕ СТОЛЫ": "team_1"}
+
+    default_buttons = {
+        "Транзакции 💳": f"{build_type_str}_transactions",
+        "АКТИВНЫЕ СТОЛЫ": f"team_{build_type_str}_1"
+    }
 
     current_user = await telegram_user_service.get_telegram_user(
-        user_id=aiogram_type.from_user.id
+        user_id=callback.from_user.id
     )
+    user_status = current_user.get_status(build_type)
+
     if current_user.is_admin:
         users = await telegram_user_service.get_list()
         bills_sum = await telegram_user_service.get_bills_sum()
-        statuses_statistic_message = get_user_statuses_statistic_message(users)
+        statuses_statistic_message = get_user_statuses_statistic_message(
+            users,
+            matrix_build_type=build_type
+        )
         message_text = (
             f"Партнеров в GiftMafia: <b>{len(users)}</b>\n"
             f"Всего подарили: <b>${int(bills_sum)}</b>\n\n"
@@ -185,7 +193,7 @@ async def donations_menu_handler(
         }
         buttons.update(admin_buttons)
 
-        await telegram_method(
+        await callback.message.edit_text(
             text=message_text,
             reply_markup=get_donate_keyboard(
                 buttons=default_buttons,
@@ -194,19 +202,26 @@ async def donations_menu_handler(
         return
 
     all_donates = await donate_confirm_service.get_donate_by_telegram_user_id(
-        telegram_user_id=current_user.id
+        telegram_user_id=current_user.id,
+        matrix_build_type=build_type,
     )
     buttons = {}
     if not all_donates:
         sponsor = await telegram_user_service.get_telegram_user(
             user_id=current_user.sponsor_user_id
         )
-        buttons.update(get_reversed_dict(get_donations_keyboard(current_user, status_list)))
+        buttons.update(get_reversed_dict(
+            get_donations_keyboard(
+                current_status=user_status,
+                status_list=status_list,
+                matrix_build_type=build_type,
+            ))
+        )
         message_text = (
                 f"Ваш спонсор: "
                 + ("@" + sponsor.username if sponsor.username else sponsor.first_name)
                 + "\n"
-                  f"Мой статус: <b>{current_user.status.value}</b>\n"
+                  f"Мой статус: <b>{user_status.value}</b>\n"
                   f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
                   f"Получено подарков: <b>$</b>{current_user.bill} \n"
         )
@@ -218,8 +233,7 @@ async def donations_menu_handler(
 
     buttons.update(default_buttons)
 
-    await telegram_method(
-        parse_mode="HTML",
+    await callback.message.edit_text(
         text=message_text,
         reply_markup=get_donate_keyboard(
             buttons=buttons,
@@ -288,7 +302,12 @@ async def donate_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    donate_sum = int(get_callback_value(callback.data))
+    build_type_str = callback.data.split("_")[-2]
+    donate_sum = int(callback.data.split("_")[-1])
+
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
     status = donate_service.get_donate_status(donate_sum)
     current_user = await telegram_user_service.get_telegram_user(
         user_id=callback.from_user.id
@@ -296,7 +315,8 @@ async def donate_handler(
 
     if not callback.from_user.username:
         await callback.message.edit_text(
-            "Перед отправкой подарка, добавьте пожалуйста <em>username</em> в свой телеграм аккаунт"
+            "Перед отправкой подарка, "
+            "добавьте пожалуйста <em>username</em> в свой телеграм аккаунт"
         )
         return
 
@@ -304,7 +324,8 @@ async def donate_handler(
         current_user.username = callback.from_user.username
 
     all_donates = await donate_confirm_service.get_donate_by_telegram_user_id(
-        telegram_user_id=current_user.id
+        telegram_user_id=current_user.id,
+        matrix_build_type=build_type,
     )
     if all_donates:
         message_text = (
@@ -324,13 +345,19 @@ async def donate_handler(
     donations_data = {}
 
     matrix = await donate_service.add_user_to_matrix(
-        first_sponsor, current_user, donate_sum, donations_data
+        first_sponsor,
+        current_user,
+        donate_sum,
+        status,
+        donations_data,
+        matrix_build_type=build_type,
     )
 
     donate = await donate_confirm_service.create_donate(
         telegram_user_id=current_user.id,
         donate_data=donations_data,
         matrix_id=matrix.id,
+        matrix_build_type=build_type,
         quantity=donate_sum,
     )
 
@@ -363,7 +390,7 @@ async def donate_handler(
         try:
             await callback.bot.send_message(
                 text=f"Вам подарок от @{current_user.username} в размере ${int(transaction.quantity)}\n"
-                     f'Нажмите "Подтвердить подарок" после получения подарка\n',
+                     f"Нажмите \"Подтвердить подарок\" после получения подарка\n",
                 chat_id=sponsor.user_id,
                 reply_markup=get_donate_keyboard(
                     buttons={"Подтвердить подарок": f"first_{transaction.id}"}
@@ -416,8 +443,9 @@ async def first_admin_confirm_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    transaction_id = get_callback_value(callback.data)
+    transaction_id = callback.data.split("_")[-1]
     page_number = callback.data.split("_")[-2]
+    build_type_str = callback.data.split("_")[-3]
 
     transaction = await donate_confirm_service.get_donate_transaction_by_id(
         transaction_id
@@ -428,7 +456,7 @@ async def first_admin_confirm_handler(
             'Время подтверждения транзакции вышло.',
             reply_markup=get_donate_keyboard(
                 buttons={
-                    "🔙 Назад ": f"all_transactions_{page_number}",
+                    "🔙 Назад ": f"all_transactions_{build_type_str}_{page_number}",
                 },
                 sizes=(1,),
             ),
@@ -441,7 +469,7 @@ async def first_admin_confirm_handler(
         reply_markup=get_donate_keyboard(
             buttons={
                 "Да": f"confirm_admin_{transaction_id}",
-                "Нет": f"all_transactions_{page_number}",
+                "Нет": f"all_transactions_{build_type_str}_{page_number}",
             },
             sizes=(2, 1),
         ),
@@ -456,8 +484,10 @@ async def first_transactions_confirm_handler(
             Container.donate_confirm_service
         ],
 ) -> None:
-    transaction_id = get_callback_value(callback.data)
+    transaction_id = callback.data.split("_")[-1]
     page_number = callback.data.split("_")[-2]
+    build_type_str = callback.data.split("_")[-3]
+
 
     transaction = await donate_confirm_service.get_donate_transaction_by_id(
         transaction_id
@@ -468,7 +498,7 @@ async def first_transactions_confirm_handler(
             'Время подтверждения транзакции вышло.',
             reply_markup=get_donate_keyboard(
                 buttons={
-                    "🔙 Назад ": f"transactions_to_me_{page_number}",
+                    "🔙 Назад ": f"transactions_to_me_{build_type_str}_{page_number}",
                 },
                 sizes=(1,),
             ),
@@ -481,7 +511,7 @@ async def first_transactions_confirm_handler(
         reply_markup=get_donate_keyboard(
             buttons={
                 "Да": f"confirm_transaction_{transaction_id}",
-                "Нет": f"transactions_to_me_{page_number}",
+                "Нет": f"transactions_to_me_{build_type_str}_{page_number}",
             },
             sizes=(2, 1),
         ),
@@ -518,7 +548,7 @@ async def cancel_confirm(
     )
 
 
-@donate_router.callback_query(F.data == "transactions")
+@donate_router.callback_query(F.data.endswith("_transactions"))
 @inject
 async def get_transactions_menu(
         callback: CallbackQuery,
@@ -526,16 +556,18 @@ async def get_transactions_menu(
             Container.telegram_user_service
         ],
 ) -> None:
+    build_type_str = callback.data.split("_")[0]
+
     buttons = {
-        "Транзакции мне 📈": "transactions_to_me_1",
-        "Транзакции от меня 📉": "transactions_from_me_1",
+        "Транзакции мне 📈": f"transactions_to_me_{build_type_str}_1",
+        "Транзакции от меня 📉": f"transactions_from_me_{build_type_str}_1",
     }
     user_id = callback.from_user.id
     user = await telegram_user_service.get_telegram_user(user_id=user_id)
     if user.is_admin:
-        buttons["Все транзакции 📊"] = "all_transactions_1"
+        buttons["Все транзакции 📊"] = f"all_transactions_{build_type_str}_1"
 
-    buttons["🔙 Назад"] = "donations"
+    buttons["🔙 Назад"] = f"donations_{build_type_str}"
 
     await callback.message.edit_text(
         "В этом разделе вы можете посмотреть информацию о подтверждении транзакций по подаркам.\n"
@@ -556,28 +588,34 @@ async def get_transactions_list_to_me(
             Container.donate_confirm_service
         ],
 ) -> None:
-    page_number = int(get_callback_value(callback.data))
+    page_number = int(callback.data.split("_")[-1])
+    build_type_str = callback.data.split("_")[-2]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
 
     user_id = callback.from_user.id
     user = await telegram_user_service.get_telegram_user(user_id=user_id)
-    transactions = await donate_confirm_service.get_donate_transaction_by_sponsor_id(
-        sponsor_id=user.id
-    )
+    transactions = await (donate_confirm_service
+    .get_donate_transaction_by_sponsor_id_and_matrix_build_type(
+        sponsor_id=user.id,
+        matrix_build_type=build_type,
+    ))
 
     paginator = Paginator(transactions, page_number=page_number, per_page=5)
     buttons = {}
     sizes = (1, 1)
 
     if paginator.has_previous():
-        buttons |= {"◀ Пред.": f"transactions_to_me_{page_number - 1}"}
+        buttons |= {"◀ Пред.": f"transactions_to_me_{build_type_str}_{page_number - 1}"}
     if paginator.has_next():
-        buttons |= {"След. ▶": f"transactions_to_me_{page_number + 1}"}
+        buttons |= {"След. ▶": f"transactions_to_me_{build_type_str}_{page_number + 1}"}
 
     if len(buttons) == 2:
         sizes = (2, 1)
 
     message = "Транзакции от пользователей Вам.\n\n"
     transactions = paginator.get_page()
+
     if transactions:
         for transaction in transactions:
             donate = await donate_confirm_service.get_donate_by_id(
@@ -600,12 +638,12 @@ async def get_transactions_list_to_me(
             )
             if not transaction.is_confirmed and not transaction.is_canceled:
                 buttons[f"Подтвердить {transaction.id}"] = (
-                    f"firsttran_{page_number}_{transaction.id}"
+                    f"firsttran_{build_type_str}_{page_number}_{transaction.id}"
                 )
     else:
         message = "У вас нет транзакций"
 
-    buttons["🔙 Назад"] = f"transactions"
+    buttons["🔙 Назад"] = f"{build_type_str}_transactions"
     await callback.message.edit_text(
         message,
         reply_markup=get_donate_keyboard(
@@ -628,12 +666,16 @@ async def get_transactions_list_from_me(
             Container.donate_confirm_service
         ],
 ) -> None:
-    page_number = int(get_callback_value(callback.data))
+    page_number = int(callback.data.split("_")[-1])
+    build_type_str = callback.data.split("_")[-2]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
 
     user_id = callback.from_user.id
     user = await telegram_user_service.get_telegram_user(user_id=user_id)
     donates = await donate_confirm_service.get_all_my_donates_and_transactions(
-        telegram_user_id=user.id
+        telegram_user_id=user.id,
+        matrix_build_type=build_type,
     )
 
     paginator = Paginator(list(donates.items()), page_number=page_number, per_page=3)
@@ -666,14 +708,14 @@ async def get_transactions_list_from_me(
         message = "У Вас нет подарков"
 
     if paginator.has_previous():
-        buttons |= {"◀ Пред.": f"transactions_from_me_{page_number - 1}"}
+        buttons |= {"◀ Пред.": f"transactions_from_me_{build_type_str}_{page_number - 1}"}
     if paginator.has_next():
-        buttons |= {"След. ▶": f"transactions_from_me_{page_number + 1}"}
+        buttons |= {"След. ▶": f"transactions_from_me_{build_type_str}_{page_number + 1}"}
 
     if len(buttons) == 2:
         sizes = (2, 1)
 
-    buttons["🔙 Назад"] = f"transactions"
+    buttons["🔙 Назад"] = f"{build_type_str}_transactions"
 
     await callback.message.edit_text(
         message,
@@ -693,9 +735,15 @@ async def get_all_transactions(
             Container.donate_confirm_service
         ],
 ) -> None:
-    page_number = int(get_callback_value(callback.data))
+    page_number = int(callback.data.split("_")[-1])
+    build_type_str = callback.data.split("_")[-2]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
     donates_and_transactions = (
-        await donate_confirm_service.get_all_donates_and_transactions()
+        await donate_confirm_service.get_all_donates_and_transactions(
+            matrix_build_type=build_type,
+        )
     )
 
     paginator = Paginator(
@@ -707,9 +755,9 @@ async def get_all_transactions(
     donates_and_transactions = paginator.get_page()
 
     if paginator.has_previous():
-        buttons |= {"◀ Пред.": f"all_transactions_{page_number - 1}"}
+        buttons |= {"◀ Пред.": f"all_transactions_{build_type_str}_{page_number - 1}"}
     if paginator.has_next():
-        buttons |= {"След. ▶": f"all_transactions_{page_number + 1}"}
+        buttons |= {"След. ▶": f"all_transactions_{build_type_str}_{page_number + 1}"}
 
     if len(buttons) == 2:
         sizes = (2, 1)
@@ -744,10 +792,10 @@ async def get_all_transactions(
                     )
                     if not transaction.is_confirmed and not transaction.is_canceled:
                         buttons[f"Подтвердить {transaction.id}"] = (
-                            f"firstadmin_{page_number}_{transaction.id}"
+                            f"firstadmin_{build_type_str}_{page_number}_{transaction.id}"
                         )
 
-    buttons["🔙 Назад"] = f"transactions"
+    buttons["🔙 Назад"] = f"{build_type_str}_transactions"
     await callback.message.edit_text(
         message,
         parse_mode="HTML",
@@ -798,15 +846,24 @@ async def confirm_transaction(
         current_matrix_id = donate.matrix_id
         current_matrix = await matrix_service.get_matrix(id=current_matrix_id)
 
-        sender_matrix_dict = {"owner_id": sender_user.id, "status": current_matrix.status}
+        sender_matrix_dict = {
+            "owner_id": sender_user.id,
+            "status": current_matrix.status,
+            "build_type": donate.matrix_build_type,
+        }
         sender_matrix_entity = MatrixEntity(**sender_matrix_dict)
         sender_matrix = await matrix_service.create_matrix(matrix=sender_matrix_entity)
 
         await matrix_service.add_to_matrix(current_matrix, sender_matrix, sender_user)
 
-        if check_telegram_user_status(sender_user, current_matrix.status):
-            sender_user.status = current_matrix.status
-
+        if check_is_second_status_higher(
+            sender_user.get_status(donate.matrix_build_type),
+            current_matrix.status
+        ):
+            sender_user.set_status(
+                status=current_matrix.status,
+                matrix_build_type=donate.matrix_build_type,
+            )
 
         try:
             await callback.bot.send_message(
@@ -833,7 +890,9 @@ async def confirm_transaction(
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
                f"от пользователя @{sender_user.username} подтверждена.")
     await callback.message.edit_text(
-        message, reply_markup=get_donate_keyboard(buttons={"🔙 Назад": "transactions"})
+        message, reply_markup=get_donate_keyboard(
+            buttons={"🔙 Назад": f"{donate.matrix_build_type.value[0]}_transactions"}
+        )
     )
 
 
@@ -887,19 +946,24 @@ async def confirm_admin_transaction(
         current_matrix_id = donate.matrix_id
         current_matrix = await matrix_service.get_matrix(id=current_matrix_id)
 
-        sender_matrix_dict = {"owner_id": sender_user.id, "status": current_matrix.status}
+        sender_matrix_dict = {
+            "owner_id": sender_user.id,
+            "status": current_matrix.status,
+            "build_type": donate.matrix_build_type,
+        }
         sender_matrix_entity = MatrixEntity(**sender_matrix_dict)
         sender_matrix = await matrix_service.create_matrix(matrix=sender_matrix_entity)
 
         await matrix_service.add_to_matrix(current_matrix, sender_matrix, sender_user)
 
-        if (
-                sender_user.status.value == DonateStatus.NOT_ACTIVE.value
-                or
-                current_matrix.status.get_status_donate_value() >
-                sender_user.status.get_status_donate_value()
+        if check_is_second_status_higher(
+            sender_user.get_status(donate.matrix_build_type),
+            current_matrix.status
         ):
-            sender_user.status = current_matrix.status
+            sender_user.set_status(
+                status=current_matrix.status,
+                matrix_build_type=donate.matrix_build_type,
+            )
 
         try:
             await callback.bot.send_message(
@@ -924,5 +988,7 @@ async def confirm_admin_transaction(
     message = (f"Транзакция на сумму ${int(transaction.quantity)} "
                f"от пользователя @{sender_user.username} подтверждена.")
     await callback.message.edit_text(
-        message, reply_markup=get_donate_keyboard(buttons={"🔙 Назад": "transactions"})
+        message, reply_markup=get_donate_keyboard(
+            buttons={"🔙 Назад": f"{donate.matrix_build_type.value[0]}_transactions"}
+        )
     )

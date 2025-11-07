@@ -94,7 +94,7 @@ class MatrixService:
         created_matrix.created_at = current_time
         build_type = matrix_to_add.build_type
         level_length = 2 if build_type == MatrixBuildType.BINARY else 3
-        second_level_length = level_length * level_length
+        second_level_length = (level_length * level_length) + level_length
 
         matrix_owner = self._repository_telegram_user.get(id=matrix_to_add.owner_id)
         if get_matrices_length(matrix_to_add.matrices) == second_level_length and matrix_owner.is_admin:

@@ -29,10 +29,7 @@ def get_sorted_objects_by_ids(
 
 
 def get_reversed_dict(dct: dict):
-    keys = []
-    values = []
-    for key, value in dct.items():
-        keys.append(key)
-        values.append(value)
+    keys = list(dct.keys())
+    values = list(dct.values())
 
     return dict(zip(list(reversed(keys)), list(reversed(values))))

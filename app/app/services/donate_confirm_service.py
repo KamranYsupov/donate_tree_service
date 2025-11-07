@@ -1,6 +1,6 @@
 import math
 import uuid
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 
 import loguru
 from app.repositories.telegram_user import RepositoryTelegramUser
@@ -8,6 +8,7 @@ from app.repositories.donate import RepositoryDonate, RepositoryDonateTransactio
 from app.models.telegram_user import TelegramUser
 from app.schemas.donate import DonateEntity, DonateTransactionEntity
 from app.schemas.telegram_user import TelegramUserEntity
+from app.models.telegram_user import MatrixBuildType
 
 
 class DonateConfirmService:
@@ -27,6 +28,7 @@ class DonateConfirmService:
         telegram_user_id: uuid.UUID,
         donate_data: dict,
         matrix_id: uuid.UUID,
+        matrix_build_type: MatrixBuildType,
         quantity: float,
     ):
         """Создание сущности доната"""
@@ -34,6 +36,7 @@ class DonateConfirmService:
             "telegram_user_id": telegram_user_id,
             "quantity": quantity,
             "matrix_id": matrix_id,
+            "matrix_build_type": matrix_build_type,
         }
         donate = DonateEntity(**donate_dict)
         donate_obj = self._repository_donate.create(obj_in=donate.model_dump())
@@ -67,8 +70,15 @@ class DonateConfirmService:
         """Получить донат по id доната"""
         return self._repository_donate.get(id=donate_id)
 
-    async def get_donate_by_telegram_user_id(self, telegram_user_id: uuid.UUID):
-        return self._repository_donate.get_donate_by_telegram_user_id(telegram_user_id)
+    async def get_donate_by_telegram_user_id(
+            self,
+            telegram_user_id: uuid.UUID,
+            matrix_build_type: MatrixBuildType,
+    ):
+        return self._repository_donate.get_donate_by_telegram_user_id(
+            telegram_user_id=telegram_user_id,
+            matrix_build_type=matrix_build_type,
+        )
 
     async def get_donate_transaction_by_id(self, donate_transaction_id: uuid.UUID):
         """Получить транзакцию по id"""
@@ -80,11 +90,28 @@ class DonateConfirmService:
             sponsor_id
         )
 
-    async def get_all_my_donates_and_transactions(self, telegram_user_id: uuid.UUID):
-        """Получить все свои отправленные донаты в виде словаря {донат: транзакции доната}"""
-        donates = self._repository_donate.get_donates_list(
-            telegram_user_id=telegram_user_id,
+    async def get_donate_transaction_by_sponsor_id_and_matrix_build_type(
+            self,
+            sponsor_id: uuid.UUID,
+            matrix_build_type: MatrixBuildType,
+    ):
+        """Получить список транзакций по id спонсора и типу построения (бинар, или тринар)."""
+        return self._repository_donate_transaction.get_donate_transaction_by_sponsor_id_and_matrix_build_type(
+            sponsor_id=sponsor_id,
+            matrix_build_type=matrix_build_type,
         )
+
+    async def get_all_my_donates_and_transactions(
+            self,
+            telegram_user_id: uuid.UUID,
+            matrix_build_type: Optional[MatrixBuildType] = None
+    ):
+        """Получить все свои отправленные донаты в виде словаря {донат: транзакции доната}"""
+        get_donates_kwargs = {"telegram_user_id": telegram_user_id}
+        if matrix_build_type:
+            get_donates_kwargs["matrix_build_type"] = matrix_build_type
+
+        donates = self._repository_donate.get_donates_list(**get_donates_kwargs)
         output_dict = {}
         for donate in donates:
             donate_transactions = self._repository_donate_transaction.list(
@@ -98,8 +125,15 @@ class DonateConfirmService:
             donate_id=donate_id, is_confirmed=False
         )
 
-    async def get_all_donates_and_transactions(self):
+    async def get_all_donates_and_transactions(
+            self,
+            matrix_build_type: Optional[MatrixBuildType] = None
+    ):
         """Получить все свои отправленные донаты в виде словаря {донат: транзакции доната}"""
+        get_donates_kwargs = dict()
+        if matrix_build_type:
+            get_donates_kwargs["matrix_build_type"] = matrix_build_type
+
         donates = self._repository_donate.get_donates_list()
         output_dict = {}
         for donate in donates:

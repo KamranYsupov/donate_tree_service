@@ -10,10 +10,12 @@ def get_callback_value(callback_data: str) -> str:
     return callback_value
 
 
-def check_telegram_user_status(telegram_user: TelegramUser, status: DonateStatus) -> bool:
+def check_is_second_status_higher(status_1: DonateStatus, status_2: DonateStatus) -> bool:
+    if status_1 == DonateStatus.NOT_ACTIVE:
+        return True
+
     expression = (
-        telegram_user.status.value == DonateStatus.NOT_ACTIVE.value or
-        status.get_status_donate_value() > telegram_user.status.get_status_donate_value()
+        status_2.get_status_donate_value() > status_1.get_status_donate_value()
     )
 
     return expression

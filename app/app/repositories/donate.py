@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
 
-from app.models.telegram_user import TelegramUser, DonateStatus
+from app.models.telegram_user import TelegramUser, DonateStatus,  MatrixBuildType
 from .base import RepositoryBase
 from app.models.donate import Donate, DonateTransaction
 
@@ -21,10 +21,15 @@ class RepositoryDonate(RepositoryBase[Donate]):
 
         return self._session.execute(statement).scalars().all()
 
-    def get_donate_by_telegram_user_id(self, telegram_user_id: uuid.UUID):
+    def get_donate_by_telegram_user_id(
+            self,
+            telegram_user_id: uuid.UUID,
+            matrix_build_type: MatrixBuildType,
+    ):
         statement = (
             select(Donate).filter_by(
                 telegram_user_id=telegram_user_id,
+                matrix_build_type=matrix_build_type,
                 is_confirmed=False,
                 is_canceled=False,
 
@@ -78,6 +83,20 @@ class RepositoryDonateTransaction(RepositoryBase[DonateTransaction]):
         statement = (
             select(DonateTransaction)
             .filter_by(sponsor_id=sponsor_id)
+            .order_by(DonateTransaction.created_at.desc())
+        )
+
+        return self._session.execute(statement).scalars().all()
+
+    def get_donate_transaction_by_sponsor_id_and_matrix_build_type(
+            self,
+            sponsor_id: uuid.UUID,
+            matrix_build_type: MatrixBuildType,
+    ):
+        statement = (
+            select(DonateTransaction)
+            .join(Donate).filter(Donate.matrix_build_type == matrix_build_type)
+            .filter(DonateTransaction.sponsor_id == sponsor_id)
             .order_by(DonateTransaction.created_at.desc())
         )
 

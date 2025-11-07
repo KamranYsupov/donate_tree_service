@@ -187,7 +187,6 @@ async def admin(
 #         donate_sum=donate_sum,
 #         matrix_build_type=build_type
 #     )
-#     loguru.logger.info(str(type(status)))
 #
 #     current_user = await telegram_user_service.get_telegram_user(
 #         user_id=message.from_user.id
@@ -219,6 +218,7 @@ async def admin(
 #     current_matrix = await matrix_service.get_matrix(
 #         owner_id=current_user.id,
 #         status=status,
+#         build_type=build_type,
 #     )
 #     await matrix_service.add_to_matrix(current_matrix, created_matrix, fake_user)
 #
@@ -229,7 +229,7 @@ async def admin(
 #         parse_mode="HTML",
 #     )
 #
-#
+
 # # Тут функции только для тестов поэтому нет DRY
 # @start_router.message(Command("create_admin"))
 # @inject

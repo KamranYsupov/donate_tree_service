@@ -153,3 +153,21 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
             self.username if self.username
             else f"Пользователь: {self.user_id}"
         )
+
+    def get_status(self, matrix_build_type: MatrixBuildType):
+        if matrix_build_type == MatrixBuildType.TRINARY:
+            return self.trinary_status
+        if matrix_build_type == MatrixBuildType.BINARY:
+            return self.binary_status
+
+        return None
+
+    def set_status(
+            self,
+            status: DonateStatus,
+            matrix_build_type: MatrixBuildType
+    ):
+        if matrix_build_type == MatrixBuildType.TRINARY:
+            self.trinary_status = status
+        if matrix_build_type == MatrixBuildType.BINARY:
+            self.binary_status = status

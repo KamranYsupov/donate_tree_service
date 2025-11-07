@@ -16,6 +16,7 @@ from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 from app.models.mixins import TimestampedMixin, UUIDMixin, AbstractTelegramUser
+from app.models.telegram_user import MatrixBuildType
 
 
 class Donate(UUIDMixin, TimestampedMixin, Base):
@@ -47,6 +48,12 @@ class Donate(UUIDMixin, TimestampedMixin, Base):
         default=None,
         index=True,
     )
+    matrix_build_type = Column(
+        Enum(MatrixBuildType),
+        default=MatrixBuildType.TRINARY,
+        index=True
+    )
+
 
     __table_args__ = {"extend_existing": True}
 
