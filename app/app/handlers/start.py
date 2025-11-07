@@ -229,7 +229,7 @@ async def admin(
 #         parse_mode="HTML",
 #     )
 #
-
+#
 # # Тут функции только для тестов поэтому нет DRY
 # @start_router.message(Command("create_admin"))
 # @inject

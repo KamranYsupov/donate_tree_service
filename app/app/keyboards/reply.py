@@ -14,7 +14,7 @@ def get_reply_keyboard(current_user: TelegramUser):
     ]
     if (
         current_user.trinary_status != DonateStatus.NOT_ACTIVE
-        and current_user.binary_status != DonateStatus.NOT_ACTIVE
+        or current_user.binary_status != DonateStatus.NOT_ACTIVE
     ):
         keyboard.append([KeyboardButton(text="👫 ПРИГЛАСИТЬ ДРУЗЕЙ 👫")])
 

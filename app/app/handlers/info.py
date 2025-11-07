@@ -17,6 +17,7 @@ from app.utils.matrix import get_active_matrices, get_archived_matrices
 from app.models.telegram_user import status_list, status_emoji_list
 from app.db.commit_decorator import commit_and_close_session
 from app.utils.texts import get_my_team_message, get_matrix_info_message
+from app.models.telegram_user import MatrixBuildType
 
 info_router = Router()
 
@@ -69,30 +70,37 @@ async def team_inline_handler(
         ],
         matrix_service: MatrixService = Provide[Container.matrix_service],
 ) -> None:
-    is_archive = callback.data.split("_")[0] == "archive"
+    callback_data_list = callback.data.split("_")
+    is_archive = callback_data_list[0] == "archive"
+
+    build_type_str = callback_data_list[-3] if is_archive else callback_data_list[-2]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
 
     current_user = await telegram_user_service.get_telegram_user(
         user_id=callback.from_user.id
     )
     matrices = await matrix_service.get_user_matrices(
-        owner_id=current_user.id
+        owner_id=current_user.id,
+        build_type=build_type,
     )
-    archived_matrices = get_archived_matrices(matrices)
+    archived_matrices = get_archived_matrices(matrices, build_type)
 
     if is_archive:
         matrices = archived_matrices
         title_text = "АРХИВ СТОЛОВ:"
         page_number, previous_page_number = \
             map(int, callback.data.split("_")[-2:])
-        callback_data_prefix = "archive_team"
-        back_button_data = f"team_{previous_page_number}"
+        callback_data_prefix = f"archive_team_{build_type_str}"
+        back_button_data = f"team_{build_type_str}_{previous_page_number}"
     else:
-        matrices = get_active_matrices(matrices)
+        matrices = get_active_matrices(matrices, build_type)
         title_text = "АКТИВНЫЕ СТОЛЫ:"
         page_number = int(callback.data.split("_")[-1])
         previous_page_number = None
-        callback_data_prefix = "team"
-        back_button_data = "donations"
+        callback_data_prefix = f"team_{build_type_str}"
+        back_button_data = f"donations_{build_type_str}"
 
 
     message, page_number, buttons, sizes = get_my_team_message(
@@ -105,7 +113,7 @@ async def team_inline_handler(
 
 
     if not is_archive and archived_matrices:
-        buttons["АРХИВ СТОЛОВ 🗄"] = f"archive_team_1_{page_number}"
+        buttons["АРХИВ СТОЛОВ 🗄"] = f"archive_team_{build_type_str}_1_{page_number}"
 
     buttons["🔙 Назад"] = back_button_data
 
@@ -131,9 +139,25 @@ async def team_inline_handler(
     await callback.message.edit_text(text=message_text)
 
 
+
+@info_router.message(F.text == "👫 ПРИГЛАСИТЬ ДРУЗЕЙ 👫")
+async def referral_message_handler(message: Message):
+    await message.answer(
+        text="Выберите тип маркетинга:",
+        reply_markup=get_donate_keyboard(
+            buttons={
+                "Тринар": "send_referrals_t",
+                "Бинар": "send_referrals_b",
+            },
+            sizes=(1, 1)
+        )
+    )
+
+
 @inject
 async def referral_handler(
         from_user_id: int,
+        build_type: MatrixBuildType,
         page_number=1,
         per_page=20,
         telegram_user_service: TelegramUserService = Provide[
@@ -159,10 +183,12 @@ async def referral_handler(
         for i in range(len(status_list))
     }
 
+    build_type_str = build_type.value[0]
+
     if paginator.has_previous():
-        buttons |= {"◀ Пред.": f"referrals_{page_number - 1}"}
+        buttons |= {"◀ Пред.": f"referrals_{build_type_str}_{page_number - 1}"}
     if paginator.has_next():
-        buttons |= {"След. ▶": f"referrals_{page_number + 1}"}
+        buttons |= {"След. ▶": f"referrals_{build_type_str}_{page_number + 1}"}
 
     buttons.update({"Отправить рассылку 📨": f"referral_message_{page_number}"})
 
@@ -173,7 +199,7 @@ async def referral_handler(
 
     start_count = per_page * page_number - per_page + 1
     for user in paginator.get_page():
-        user_status_emoji = status_emoji_data.get(user.status, "🆓",)
+        user_status_emoji = status_emoji_data.get(user.get_status(build_type), "🆓",)
         message_text += f"{start_count}. @{user.username}: {user_status_emoji}\n"
         start_count += 1
 
@@ -185,24 +211,32 @@ async def referral_handler(
     return message_text, reply_markup
 
 
-@info_router.message(F.text == "👫 ПРИГЛАСИТЬ ДРУЗЕЙ 👫")
+@info_router.callback_query(F.data.startswith("send_referrals_"))
 @inject
-async def referral_message_handler(
-        message: Message,
+async def send_referral_message_handler(
+        callback: CallbackQuery,
         telegram_user_service: TelegramUserService = Provide[
             Container.telegram_user_service
         ],
 ) -> None:
+    build_type_str = callback.data.split("_")[-1]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
     current_user = await telegram_user_service.get_telegram_user(
-        user_id=message.from_user.id
+        user_id=callback.from_user.id
     )
     if not current_user:
         return
 
-    message_text, reply_markup = await referral_handler(current_user.user_id)
+    message_text, reply_markup = await referral_handler(
+        from_user_id=current_user.user_id,
+        build_type=build_type,
+    )
 
+    await callback.message.delete()
     if message_text:
-        await message.answer(
+        await callback.message.answer(
             text=message_text,
             reply_markup=reply_markup,
         )
@@ -215,7 +249,7 @@ async def referral_message_handler(
         url=registration_link
     )
     gift_mafia_keyboard.add(registration_button)
-    await message.answer_photo(
+    await callback.message.answer_photo(
         photo=photo,
         caption=html.bold((
             "🔥 Жаркая премьера - ‘’GiftMafia’’\n\n"
@@ -227,7 +261,7 @@ async def referral_message_handler(
         )),
         reply_markup=gift_mafia_keyboard.as_markup(),
     )
-    await message.answer(
+    await callback.message.answer(
         f"Ваша реферальная ссылка: {registration_link}",
     )
 
@@ -236,14 +270,16 @@ async def referral_message_handler(
 @inject
 async def referral_callback_handler(
         callback: CallbackQuery,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
 ) -> None:
-    page_number = int(callback.data.split('_')[-1])
+    page_number = int(callback.data.split("_")[-1])
+    build_type_str = callback.data.split("_")[-2]
+    build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
     message_text, reply_markup = await referral_handler(
-        callback.from_user.id,
-        page_number=page_number
+        from_user_id=callback.from_user.id,
+        build_type=build_type,
+        page_number=page_number,
     )
 
     await callback.message.edit_text(

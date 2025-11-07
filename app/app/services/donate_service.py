@@ -118,7 +118,8 @@ class DonateService:
             matrix_build_type: MatrixBuildType,
     ) -> Matrix:
         level_length = 2 if matrix_build_type == MatrixBuildType.BINARY else 3
-        second_level_length = (level_length * level_length) + level_length
+        second_level_length = level_length * level_length
+        matrix_max_length = second_level_length + level_length
 
         first_sponsor_matrices = self._repository_matrix.get_user_matrices(
             owner_id=first_sponsor.id,
@@ -136,7 +137,7 @@ class DonateService:
             )
 
         for matrix in first_sponsor_matrices:
-            if get_matrices_length(matrix.matrices) < second_level_length:
+            if get_matrices_length(matrix.matrices) < matrix_max_length:
                 return await self._send_donate_to_matrix_owner(
                     matrix,
                     current_user,
@@ -144,6 +145,8 @@ class DonateService:
                     donate_sum,
                     status,
                     donations_data,
+                    matrix_build_type=matrix_build_type,
+                    level_length=level_length,
                 )
 
         else:
@@ -152,6 +155,8 @@ class DonateService:
                 donate_sum,
                 status,
                 donations_data,
+                matrix_build_type=matrix_build_type,
+                level_length=level_length,
             )
 
     @inject
@@ -177,7 +182,7 @@ class DonateService:
                     level_length=level_length,
                 )
 
-            if not (
+            if next_sponsor.get_status(matrix_build_type) == DonateStatus.NOT_ACTIVE or not (
                 int(status.get_status_donate_value()) <= int(
                     next_sponsor.get_status(matrix_build_type)
                     .get_status_donate_value()

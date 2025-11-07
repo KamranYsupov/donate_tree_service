@@ -124,19 +124,13 @@ async def subscription_checker(
 @inject
 async def donations_menu_handler(
         aiogram_type: Message | CallbackQuery,
-        telegram_user_service: TelegramUserService = Provide[
-            Container.telegram_user_service
-        ],
-        donate_confirm_service: DonateConfirmService = Provide[
-            Container.donate_confirm_service
-        ],
 ) -> None:
     telegram_method = aiogram_type.answer \
         if isinstance(aiogram_type, Message) \
         else aiogram_type.message.edit_text
 
     await telegram_method(
-        text="Выберите тип столов:",
+        text="Выберите тип маркетинга:",
         reply_markup=get_donate_keyboard(
             buttons={
                 "Тринар": "donations_t",
@@ -271,6 +265,8 @@ async def confirm_donate(
 
     callback_donate_data = "_".join(callback.data.split("_")[1:])
     donate_sum = callback_donate_data.split("_")[-1]
+    build_type_str = callback.data.split("_")[-2]
+
 
     await callback.message.edit_text(
         text=f"Для завершения действия, "
@@ -281,7 +277,7 @@ async def confirm_donate(
         reply_markup=get_donate_keyboard(
             buttons={
                 "Да": callback_donate_data,
-                "Нет": "donations",
+                "Нет": f"donations_{build_type_str}",
             },
             sizes=(2, 1),
         ),

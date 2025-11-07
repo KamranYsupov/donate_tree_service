@@ -5,6 +5,7 @@ from typing import List
 import loguru
 from app.models.matrix import Matrix
 from app.models.telegram_user import TelegramUser
+from app.models.telegram_user import MatrixBuildType
 
 
 def get_sorted_matrices(matrices, status_list):
@@ -39,10 +40,12 @@ def get_matrices_list(matrices) -> tuple[list[Matrix], list[Matrix]]:
 
 
 def get_my_team_telegram_usernames(
-        matrix,
+        matrix: Matrix,
 ) -> tuple[list, list, int]:
     first_level_usernames = []
     second_level_usernames = []
+
+    level_length = 2 if matrix.build_type == MatrixBuildType.BINARY else 3
 
     first_matrix_usernames = list(matrix.matrix_telegram_usernames.keys())
 
@@ -53,8 +56,7 @@ def get_my_team_telegram_usernames(
     )
 
     length = 0
-    for i in range(3):
-
+    for i in range(level_length):
         try:
             first_level_usernames.append(
                 sorted_first_level_usernames[i]
@@ -65,14 +67,14 @@ def get_my_team_telegram_usernames(
 
     for first_level_matrix in sorted_first_level_usernames:
         if first_level_matrix == 0:
-            second_level_usernames.extend([0, 0, 0])
+            second_level_usernames.extend( [0] * level_length )
             continue
         second_list = []
         for second_level_matrix in matrix.matrix_telegram_usernames[first_level_matrix]:
             second_list.append(second_level_matrix.split()[0])
             length += 1
 
-        while len(second_list) < 3:
+        while len(second_list) < level_length:
             second_list.append(0)
 
         second_level_usernames.extend(second_list)
@@ -100,19 +102,31 @@ def find_first_level_matrix_id(
     return None
 
 
-def get_archived_matrices(matrices: List[Matrix]) -> List[Matrix]:
+def get_archived_matrices(
+        matrices: List[Matrix],
+        build_type: MatrixBuildType
+) -> List[Matrix]:
+    level_length = 2 if build_type == MatrixBuildType.BINARY else 3
+    matrix_max_length = (level_length * level_length) + level_length
+
     archived_matrices = [
         matrix for matrix in matrices
-        if get_matrices_length(matrix.matrices) == 12
+        if get_matrices_length(matrix.matrices) == matrix_max_length
     ]
 
     return archived_matrices
 
 
-def get_active_matrices(matrices: List[Matrix]) -> List[Matrix]:
+def get_active_matrices(
+        matrices: List[Matrix],
+        build_type: MatrixBuildType
+) -> List[Matrix]:
+    level_length = 2 if build_type == MatrixBuildType.BINARY else 3
+    matrix_max_length = (level_length * level_length) + level_length
+
     archived_matrices = [
         matrix for matrix in matrices
-        if get_matrices_length(matrix.matrices) < 12
+        if get_matrices_length(matrix.matrices) < matrix_max_length
     ]
 
     return archived_matrices

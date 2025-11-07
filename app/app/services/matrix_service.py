@@ -40,12 +40,14 @@ class MatrixService:
 
     async def get_user_matrices(
             self,
-            owner_id: uuid.uuid4,
-            status: DonateStatus = None,
+            owner_id: uuid.UUID,
+            status: DonateStatus | None = None,
+            build_type: MatrixBuildType | None = None,
     ) -> list[Matrix]:
         return self._repository_matrix.get_user_matrices(
             owner_id=owner_id,
             status=status,
+            build_type=build_type
         )
 
     async def get_parent_matrix(
@@ -94,10 +96,11 @@ class MatrixService:
         created_matrix.created_at = current_time
         build_type = matrix_to_add.build_type
         level_length = 2 if build_type == MatrixBuildType.BINARY else 3
-        second_level_length = (level_length * level_length) + level_length
+        second_level_length = level_length * level_length
+        matrix_max_length = second_level_length + level_length
 
         matrix_owner = self._repository_telegram_user.get(id=matrix_to_add.owner_id)
-        if get_matrices_length(matrix_to_add.matrices) == second_level_length and matrix_owner.is_admin:
+        if get_matrices_length(matrix_to_add.matrices) == matrix_max_length and matrix_owner.is_admin:
             matrix_to_add_dict = {
                 "owner_id": matrix_owner.id,
                 "status": matrix_to_add.status,
