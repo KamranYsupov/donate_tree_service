@@ -185,7 +185,6 @@ async def admin(
 #
 #     status = donate_service.get_donate_status(
 #         donate_sum=donate_sum,
-#         matrix_build_type=build_type
 #     )
 #
 #     current_user = await telegram_user_service.get_telegram_user(
@@ -267,7 +266,7 @@ async def admin(
 #         )
 #
 #     await message.answer(
-#         f"✅ Готово - https://t.me/Kamranchik_Bot?start={admin_user.user_id}",
+#         f"✅ Готово - {settings.bot_link}?start={admin_user.user_id}",
 #     )
 #
 #
@@ -290,7 +289,6 @@ async def admin(
 #
 #     status = donate_service.get_donate_status(
 #         donate_sum=donate_sum,
-#         matrix_build_type=build_type
 #     )
 #     admin_user = await telegram_user_service.get_telegram_user(
 #         is_admin=True,

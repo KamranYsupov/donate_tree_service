@@ -172,3 +172,21 @@ class TelegramUser(UUIDMixin, TimestampedMixin, AbstractTelegramUser, Base):
             self.trinary_status = status
         if matrix_build_type == MatrixBuildType.BINARY:
             self.binary_status = status
+
+    def get_bill(self, matrix_build_type: MatrixBuildType):
+        if matrix_build_type == MatrixBuildType.TRINARY:
+            return self.trinary_bill
+        if matrix_build_type == MatrixBuildType.BINARY:
+            return self.binary_bill
+
+        return None
+
+    def add_to_bill(
+            self,
+            value: int,
+            matrix_build_type: MatrixBuildType
+    ):
+        if matrix_build_type == MatrixBuildType.TRINARY:
+            self.trinary_bill += value
+        if matrix_build_type == MatrixBuildType.BINARY:
+            self.binary_bill += value

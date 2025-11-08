@@ -167,7 +167,7 @@ async def donations_menu_handler(
 
     if current_user.is_admin:
         users = await telegram_user_service.get_list()
-        bills_sum = await telegram_user_service.get_bills_sum()
+        bills_sum = await telegram_user_service.get_bills_sum(build_type=build_type)
         statuses_statistic_message = get_user_statuses_statistic_message(
             users,
             matrix_build_type=build_type
@@ -177,7 +177,7 @@ async def donations_menu_handler(
             f"Всего подарили: <b>${int(bills_sum)}</b>\n\n"
             f"{statuses_statistic_message}\n"
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-            f"Получено подарков: <b>${int(current_user.bill)}</b>\n"
+            f"Получено подарков: <b>${int(current_user.get_bill(build_type))}</b>\n"
         )
         buttons = default_buttons
         admin_buttons = {
@@ -217,7 +217,7 @@ async def donations_menu_handler(
                 + "\n"
                   f"Мой статус: <b>{user_status.value}</b>\n"
                   f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
-                  f"Получено подарков: <b>$</b>{current_user.bill} \n"
+                  f"Получено подарков: <b>$</b>{int(current_user.get_bill(build_type))} \n"
         )
     else:
         message_text = (
@@ -830,7 +830,11 @@ async def confirm_transaction(
         donate_transaction_id=transaction_id
     )
     sponsor = await telegram_user_service.get_telegram_user(id=transaction.sponsor_id)
-    sponsor.bill += transaction.quantity
+    sponsor.add_to_bill(
+        value=transaction.quantity,
+        matrix_build_type=donate.matrix_build_type,
+    )
+
     sender_user = await telegram_user_service.get_telegram_user(
         id=donate.telegram_user_id
     )
@@ -919,7 +923,10 @@ async def confirm_admin_transaction(
         donate_transaction_id=transaction_id
     )
     sponsor = await telegram_user_service.get_telegram_user(id=transaction.sponsor_id)
-    sponsor.bill += transaction.quantity
+    sponsor.add_to_bill(
+        value=transaction.quantity,
+        matrix_build_type=donate.matrix_build_type,
+    )
     try:
         if not sponsor.is_admin:
             await callback.bot.send_message(

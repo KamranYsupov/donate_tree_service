@@ -4,6 +4,8 @@ from sqlalchemy.orm import joinedload
 from .base import RepositoryBase
 from app.models.telegram_user import TelegramUser
 
+from ..models.telegram_user import MatrixBuildType
+
 
 class RepositoryTelegramUser(RepositoryBase[TelegramUser]):
     """Репозиторий телеграм пользователя"""
@@ -42,11 +44,16 @@ class RepositoryTelegramUser(RepositoryBase[TelegramUser]):
 
     def get_bills(
             self,
+            build_type: MatrixBuildType,
             *args,
             **kwargs
     ) -> list[int]:
+        bill_field = TelegramUser.binary_bill if build_type == MatrixBuildType.BINARY \
+            else TelegramUser.trinary_bill
+
+
         statement = (
-            select(TelegramUser.bill)
+            select(bill_field)
             .filter(*args)
             .filter_by(**kwargs)
         )

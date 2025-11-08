@@ -5,6 +5,7 @@ from app.repositories.telegram_user import RepositoryTelegramUser
 from app.models.telegram_user import TelegramUser
 from app.schemas.telegram_user import TelegramUserEntity
 from app.models.matrix import Matrix
+from app.models.telegram_user import MatrixBuildType
 
 
 class TelegramUserService:
@@ -104,7 +105,14 @@ class TelegramUserService:
 
     async def get_bills_sum(
             self,
+            build_type: MatrixBuildType,
             *args,
             **kwargs
     ) -> int:
-        return sum(self._repository_telegram_user.get_bills(*args, **kwargs))
+        return sum(
+            self._repository_telegram_user.get_bills(
+                *args,
+                build_type=build_type,
+                **kwargs,
+            )
+        )
