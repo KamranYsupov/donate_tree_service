@@ -146,8 +146,8 @@ async def referral_message_handler(message: Message):
         text="Выберите тип маркетинга:",
         reply_markup=get_donate_keyboard(
             buttons={
-                "Тринар": "send_referrals_t",
-                "Бинар": "send_referrals_b",
+                "BINAR": "send_referrals_b",
+                "TRINAR": "send_referrals_t",
             },
             sizes=(1, 1)
         )

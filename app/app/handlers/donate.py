@@ -133,8 +133,8 @@ async def donations_menu_handler(
         text="Выберите тип маркетинга:",
         reply_markup=get_donate_keyboard(
             buttons={
-                "Тринар": "donations_t",
-                "Бинар": "donations_b",
+                "BINAR": "donations_b",
+                "TRINAR": "donations_t",
             },
             sizes=(1, 1)
         )
