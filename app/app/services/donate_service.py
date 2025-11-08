@@ -14,6 +14,7 @@ from app.services.telegram_user_service import TelegramUserService
 from app.schemas.matrix import MatrixEntity
 from app.utils.matrix import get_matrices_length
 from app.utils.matrix import find_first_level_matrix_id
+from app.utils.sort import get_reversed_dict
 
 
 class DonateService:
@@ -28,18 +29,24 @@ class DonateService:
     @staticmethod
     def get_donate_status(
             donate_sum: int,
-            matrix_build_type: MatrixBuildType = MatrixBuildType.TRINARY
     ) -> DonateStatus | None:
-        donate_status_data: dict[DonateStatus, int] = DonateStatus.get_donate_status_data(
-            matrix_build_type
-        )
 
-        for status, value in donate_status_data.items():
-            if int(value) == int(donate_sum):
-                return status
+        if donate_sum == 10:
+            return DonateStatus.BASE
+        elif donate_sum in (20, 30):
+            return DonateStatus.BRONZE
+        elif donate_sum in (40, 100):
+            return DonateStatus.SILVER
+        elif donate_sum in (80, 300):
+            return DonateStatus.GOLD
+        elif donate_sum in (160, 1000):
+            return DonateStatus.PLATINUM
+        elif donate_sum in (320, 3000):
+            return DonateStatus.DIAMOND
+        elif donate_sum in (640, 10000):
+            return DonateStatus.BRILLIANT
 
         return None
-
 
     @staticmethod
     def _extend_donations_data(data: dict, sponsor: TelegramUser, donate: int | float):

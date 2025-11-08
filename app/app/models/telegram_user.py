@@ -77,7 +77,7 @@ class DonateStatus(enum.Enum):
             cls.GOLD: 80,
             cls.PLATINUM: 160,
             cls.DIAMOND: 320,
-            cls.BRILLIANT: 740,
+            cls.BRILLIANT: 640,
         }
 
     @classmethod
