@@ -134,7 +134,7 @@ class DonateConfirmService:
         if matrix_build_type:
             get_donates_kwargs["matrix_build_type"] = matrix_build_type
 
-        donates = self._repository_donate.get_donates_list()
+        donates = self._repository_donate.get_donates_list(**get_donates_kwargs)
         output_dict = {}
         for donate in donates:
             donate_transactions = self._repository_donate_transaction.list(
