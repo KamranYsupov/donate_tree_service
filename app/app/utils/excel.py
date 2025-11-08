@@ -34,7 +34,8 @@ async def export_users_to_excel(
             "Тринарный статус": user.trinary_status.value,
             "Бинарный статус": user.binary_status.value,
             "Кол-во приглашенных": user.invites_count,
-            "Общий доход": user.bill,
+            "Тринарный общий доход": user.trinary_bill,
+            "Бинарный общий доход": user.binary_bill,
             "Tg ID": user.user_id,
             "Дата время регистрации": \
                 user.created_at.strftime("%d.%m.%Y %H:%M")
