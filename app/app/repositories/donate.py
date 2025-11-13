@@ -1,6 +1,7 @@
 import uuid
+from typing import List
 
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, func
 from sqlalchemy.orm import selectinload
 
 from app.models.telegram_user import TelegramUser, DonateStatus,  MatrixBuildType
@@ -67,6 +68,29 @@ class RepositoryDonate(RepositoryBase[Donate]):
 
         self._session.execute(cancel_transactions_statement)
         self._session.execute(cancel_donate_statement)
+
+    def get_count(self, *args, **kwargs) -> int:
+        statement = (
+            select(func.count(Donate.id))
+            .filter(*args)
+            .filter_by(**kwargs)
+        )
+
+        return self._session.execute(statement).scalar()
+
+    def get_donates_by_matrices_ids(
+            self,
+            matrices_ids: List[uuid.UUID | str],
+            **kwargs,
+    ):
+        statement = (
+            select(Donate)
+            .filter(Donate.matrix_id.in_(matrices_ids))
+            .filter_by(**kwargs)
+            .order_by(Donate.created_at.desc())
+        )
+
+        return self._session.execute(statement).scalars().all()
 
 
 class RepositoryDonateTransaction(RepositoryBase[DonateTransaction]):

@@ -7,6 +7,7 @@ from dependency_injector.wiring import inject
 
 from app.repositories.telegram_user import RepositoryTelegramUser
 from app.repositories.matrix import RepositoryMatrix
+from app.repositories.donate import RepositoryDonate
 from app.models.telegram_user import TelegramUser, DonateStatus, MatrixBuildType
 from app.models.matrix import Matrix
 from app.services.matrix_service import MatrixService
@@ -22,9 +23,11 @@ class DonateService:
             self,
             repository_telegram_user: RepositoryTelegramUser,
             repository_matrix: RepositoryMatrix,
+            repository_donate: RepositoryDonate,
     ) -> None:
         self._repository_telegram_user = repository_telegram_user
         self._repository_matrix = repository_matrix
+        self._repository_donate = repository_donate
 
     @staticmethod
     def get_donate_status(
@@ -221,6 +224,127 @@ class DonateService:
             else:
                 user_to_add = next_sponsor
                 continue
+
+    def check_is_matrix_free_with_donates(
+            self,
+            matrix: Matrix,
+            matrix_build_type: MatrixBuildType,
+            status: DonateStatus
+    ):
+        current_matrix = matrix
+        level_length = 2 if matrix_build_type == MatrixBuildType.BINARY else 3
+        second_level_length = level_length * level_length
+
+        first_level_current_matrix_length = len(list(current_matrix.matrices.keys()))
+        current_matrix_donates_count = self._repository_donate.get_count(
+            matrix_id=current_matrix.id,
+            is_confirmed=False,
+            is_canceled=False,
+        )
+
+        if first_level_current_matrix_length < level_length:
+            first_level_empty_places_count = level_length - first_level_current_matrix_length
+            loguru.logger.info(str(first_level_empty_places_count))
+            loguru.logger.info(str(current_matrix_donates_count))
+
+            if first_level_empty_places_count <= current_matrix_donates_count:
+                return False
+
+            parent_matrix = self._repository_matrix.get_parent_matrix(
+                matrix_id=current_matrix.id,
+                status=status,
+            )
+            if not parent_matrix:
+                return True
+            parent_first_level_matrices = self._repository_matrix.get_matrices_by_ids_list(
+                matrices_ids=list(parent_matrix.matrices.keys())
+            )
+            loguru.logger.info(str(parent_first_level_matrices))
+
+            sorted_parent_first_level_matrices = sorted(
+                parent_first_level_matrices,
+                key=lambda x: x.created_at,
+            )
+            current_matrix_index = sorted_parent_first_level_matrices.index(current_matrix)
+
+            p_matrix_max_length_till_current_matrix = (
+                (level_length * (current_matrix_index + 1)) + level_length
+            )
+            loguru.logger.info(str(p_matrix_max_length_till_current_matrix))
+            p_matrix_length_till_current_matrix = len(parent_first_level_matrices)
+            loguru.logger.info(str(p_matrix_length_till_current_matrix))
+            for parent_first_level_matrix in sorted_parent_first_level_matrices[:current_matrix_index + 1]:
+                p_matrix_length_till_current_matrix += len(list(parent_first_level_matrix.matrices.keys()))
+
+
+            loguru.logger.info(str(p_matrix_length_till_current_matrix))
+
+
+            p_matrix_empty_places_count_till_current_matrix = (
+                p_matrix_max_length_till_current_matrix - p_matrix_length_till_current_matrix
+            )
+            donate_matrices_ids = [
+                matrix.id for matrix in parent_first_level_matrices[:current_matrix_index]
+                if len(list(matrix.matrices.keys())) < level_length
+            ]
+            donate_matrices_ids.append(parent_matrix.id)
+
+            matrices_donates = self._repository_donate.get_donates_by_matrices_ids(
+                matrices_ids=donate_matrices_ids,
+                is_confirmed=False,
+                is_canceled=False,
+            )
+            matrices_donates_count = len(matrices_donates) + current_matrix_donates_count
+
+            if p_matrix_empty_places_count_till_current_matrix <= matrices_donates_count:
+                return False
+
+            return True
+
+        second_level_current_matrix_length = get_matrices_length(current_matrix.matrices) - level_length
+        second_level_empty_places_count = second_level_length - second_level_current_matrix_length
+
+        if second_level_empty_places_count <= current_matrix_donates_count:
+            return False
+
+        first_level_matrices = self._repository_matrix.get_matrices_by_ids_list(
+            matrices_ids=list(matrix.matrices.keys())
+        )
+        sorted_first_level_matrices = sorted(first_level_matrices, key=lambda x: x.created_at)
+
+        first_level_matrix_to_add = None
+        for first_level_matrix in sorted_first_level_matrices:
+            if len(list(first_level_matrix.matrices.keys())) < level_length:
+                first_level_matrix_to_add = first_level_matrix
+
+        first_level_matrix_to_add_length = get_matrices_length(first_level_matrix_to_add.matrices)
+        loguru.logger.info(str(first_level_matrix_to_add_length))
+        first_level_matrix_to_add_empty_places_count = (
+            level_length - first_level_matrix_to_add_length
+        )
+        first_level_matrix_to_add_donates_count = self._repository_donate.get_count(
+            matrix_id=first_level_matrix_to_add.id,
+            is_confirmed=False,
+            is_canceled=False,
+        )
+        if (
+            first_level_matrix_to_add_empty_places_count <=
+            (first_level_matrix_to_add_donates_count + current_matrix_donates_count)
+        ):
+            return False
+
+        return True
+
+
+
+
+
+
+
+
+
+
+
 
 
 

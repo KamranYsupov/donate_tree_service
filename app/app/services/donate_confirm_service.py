@@ -1,6 +1,6 @@
 import math
 import uuid
-from typing import Tuple, Any, Optional
+from typing import Tuple, Any, Optional, List
 
 import loguru
 from app.repositories.telegram_user import RepositoryTelegramUser
@@ -186,3 +186,9 @@ class DonateConfirmService:
         return self._repository_donate.cancel_donate_with_transactions(
             donate_id=donate_id
         )
+
+    async def get_donates_count(self, *args, **kwargs) -> int:
+        return self._repository_donate.get_count(*args, **kwargs)
+
+    async def get_donates_by_matrices_ids(self, matrices_ids: List[uuid.UUID | str]):
+        return self._repository_donate.get_donates_by_matrices_ids(matrices_ids)

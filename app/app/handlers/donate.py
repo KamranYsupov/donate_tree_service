@@ -35,6 +35,7 @@ from app.tasks.donate import check_is_donate_confirmed_or_delete_donate_task
 from app.utils.texts import get_donate_confirm_message
 from app.utils.excel import export_users_to_excel
 from app.utils.texts import get_user_statuses_statistic_message
+from app.tasks.matrix import check_is_matrix_free_with_donates_task
 
 donate_router = Router()
 
@@ -348,6 +349,29 @@ async def donate_handler(
         donations_data,
         matrix_build_type=build_type,
     )
+    now = datetime.now()
+
+    if not donate_service.check_is_matrix_free_with_donates(
+        matrix=matrix,
+        matrix_build_type=build_type,
+        status=status,
+    ):
+        await callback.message.edit_text(
+            "Подождите пока подтвердятся подарки "
+            "других пользователей на этот стол."
+        )
+        check_is_matrix_free_with_donates_task.apply_async(
+            eta=now + timedelta(
+                minutes=settings.check_is_matrix_free_with_donates_minutes_interval
+            ),
+            kwargs={
+                "chat_id": current_user.user_id,
+                "matrix_id": matrix.id,
+                "build_type_str": build_type_str,
+                "donate_sum": donate_sum,
+            },
+        )
+        return
 
     donate = await donate_confirm_service.create_donate(
         telegram_user_id=current_user.id,
@@ -357,15 +381,13 @@ async def donate_handler(
         quantity=donate_sum,
     )
 
-    now = datetime.now()
-    eta = now + timedelta(minutes=settings.donate_confirmation_time_minutes)
 
     check_is_donate_confirmed_or_delete_donate_task.apply_async(
         kwargs={
             "donate_id": donate.id,
             "donate_sender_user_id": current_user.user_id,
     },
-        eta=eta
+        eta=now + timedelta(minutes=settings.donate_confirmation_time_minutes)
     )
     transactions = await donate_confirm_service.get_donate_transactions_by_donate_id(
         donate_id=donate.id

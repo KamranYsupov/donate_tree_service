@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from datetime import timedelta, datetime
 from typing import Optional
 
 from aiogram import Bot
@@ -17,6 +18,8 @@ from app.loader import bot
 from app.tasks.const import (
     loop
 )
+from app.models.telegram_user import DonateStatus, MatrixBuildType
+from app.core.config import settings
 
 
 async def send_first_level_notification(
@@ -63,5 +66,58 @@ def send_matrix_first_level_notification_task(
         send_first_level_notification(
             matrix_id,
             matrix_owner_user_id
+        )
+    )
+
+
+@celery_app.task
+def check_is_matrix_free_with_donates_task(
+        chat_id: int | str,
+        matrix_id: uuid.UUID,
+        build_type_str: str, # "b" or "t"
+        donate_sum: int,
+) -> None:
+    from app.core.container import Container
+
+    container = Container()
+    donate_service = container.donate_service()
+    repository_matrix = container.repository_matrix()
+
+    matrix_build_type = MatrixBuildType.BINARY \
+        if build_type_str == "b" else MatrixBuildType.TRINARY
+
+    status = donate_service.get_donate_status(
+        donate_sum=donate_sum,
+    )
+
+    matrix = repository_matrix.get(id=matrix_id)
+    is_matrix_free_with_donates = donate_service.check_is_matrix_free_with_donates(
+        matrix=matrix,
+        matrix_build_type=matrix_build_type,
+        status=status,
+    )
+
+    if not is_matrix_free_with_donates:
+        now = datetime.now()
+        check_is_matrix_free_with_donates_task.apply_async(
+            eta=now + timedelta(
+                minutes=settings.check_is_matrix_free_with_donates_minutes_interval
+            ),
+            kwargs={
+                "chat_id": chat_id,
+                "matrix_id": matrix.id,
+                "build_type_str": build_type_str,
+                "donate_sum": donate_sum,
+            },
+        )
+        return
+
+    loop.run_until_complete(
+        bot.send_message(
+            chat_id=chat_id,
+            text=(
+                f"Вы можете отправить донат "
+                f"в маркетинге \"{matrix_build_type.value}\""
+            )
         )
     )

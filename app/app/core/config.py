@@ -72,6 +72,10 @@ class Settings(BaseSettings):
         title="Время на подтверждение доната в минутах",
         default=45,
     )
+    check_is_matrix_free_with_donates_minutes_interval: int = Field(
+        title="Интервал проверки свободна ли матрица для доната",
+        default=5,
+    )
 
     @computed_field
     @property

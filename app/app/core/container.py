@@ -78,6 +78,7 @@ class Container(containers.DeclarativeContainer):
         DonateService,
         repository_telegram_user=repository_telegram_user,
         repository_matrix=repository_matrix,
+        repository_donate=repository_donate,
     )
     donate_confirm_service = providers.Singleton(
         DonateConfirmService,
