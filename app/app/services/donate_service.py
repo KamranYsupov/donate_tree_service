@@ -270,15 +270,10 @@ class DonateService:
             p_matrix_max_length_till_current_matrix = (
                 (level_length * (current_matrix_index + 1)) + level_length
             )
-            loguru.logger.info(str(p_matrix_max_length_till_current_matrix))
             p_matrix_length_till_current_matrix = len(parent_first_level_matrices)
-            loguru.logger.info(str(p_matrix_length_till_current_matrix))
+
             for parent_first_level_matrix in sorted_parent_first_level_matrices[:current_matrix_index + 1]:
                 p_matrix_length_till_current_matrix += len(list(parent_first_level_matrix.matrices.keys()))
-
-
-            loguru.logger.info(str(p_matrix_length_till_current_matrix))
-
 
             p_matrix_empty_places_count_till_current_matrix = (
                 p_matrix_max_length_till_current_matrix - p_matrix_length_till_current_matrix
@@ -294,9 +289,9 @@ class DonateService:
                 is_confirmed=False,
                 is_canceled=False,
             )
-            matrices_donates_count = len(matrices_donates) + current_matrix_donates_count
+            total_donates_count = len(matrices_donates) + current_matrix_donates_count
 
-            if p_matrix_empty_places_count_till_current_matrix <= matrices_donates_count:
+            if p_matrix_empty_places_count_till_current_matrix <= total_donates_count:
                 return False
 
             return True
@@ -312,25 +307,17 @@ class DonateService:
         )
         sorted_first_level_matrices = sorted(first_level_matrices, key=lambda x: x.created_at)
 
-        first_level_matrix_to_add = None
-        for first_level_matrix in sorted_first_level_matrices:
-            if len(list(first_level_matrix.matrices.keys())) < level_length:
-                first_level_matrix_to_add = first_level_matrix
-
-        first_level_matrix_to_add_length = get_matrices_length(first_level_matrix_to_add.matrices)
-        loguru.logger.info(str(first_level_matrix_to_add_length))
-        first_level_matrix_to_add_empty_places_count = (
-            level_length - first_level_matrix_to_add_length
-        )
-        first_level_matrix_to_add_donates_count = self._repository_donate.get_count(
-            matrix_id=first_level_matrix_to_add.id,
+        donate_first_level_matrices_ids = [
+            matrix.id for matrix in sorted_first_level_matrices
+            if len(list(matrix.matrices.keys())) < level_length
+        ]
+        first_level_matrices_donates = self._repository_donate.get_donates_by_matrices_ids(
+            matrices_ids=donate_first_level_matrices_ids,
             is_confirmed=False,
             is_canceled=False,
         )
-        if (
-            first_level_matrix_to_add_empty_places_count <=
-            (first_level_matrix_to_add_donates_count + current_matrix_donates_count)
-        ):
+        total_donates_count = len(first_level_matrices_donates) + current_matrix_donates_count
+        if second_level_empty_places_count <= total_donates_count:
             return False
 
         return True
