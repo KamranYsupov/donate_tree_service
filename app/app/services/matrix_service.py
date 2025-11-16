@@ -97,8 +97,20 @@ class MatrixService:
         build_type = matrix_to_add.build_type
         level_length = 2 if build_type == MatrixBuildType.BINARY else 3
         second_level_length = level_length * level_length
+        matrix_max_length = level_length + second_level_length
 
         matrix_owner = self._repository_telegram_user.get(id=matrix_to_add.owner_id)
+        if get_matrices_length(matrix_to_add.matrices) == matrix_max_length and matrix_owner.is_admin:
+            matrix_to_add_dict = {
+                "owner_id": matrix_owner.id,
+                "status": matrix_to_add.status,
+                "build_type": build_type,
+            }
+            matrix_to_add_entity = MatrixEntity(**matrix_to_add_dict)
+            matrix_to_add = self._repository_matrix.create(obj_in=matrix_to_add_entity)
+            (matrix_to_add.matrices,
+             matrix_to_add.matrix_telegram_usernames,
+             matrix_to_add.telegram_users) = {}, {}, []
 
         matrix_json = {str(created_matrix.id): []}
         matrix_telegram_user_json = {
