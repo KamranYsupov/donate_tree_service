@@ -155,7 +155,7 @@ class DonateService:
                 donations_data,
                 matrix_build_type=matrix_build_type,
                 level_length=level_length,
-            )
+            ), True
 
         matrices_with_empty_places = []
         for matrix in first_sponsor_matrices:
