@@ -341,7 +341,7 @@ async def donate_handler(
 
     donations_data = {}
 
-    matrix = await donate_service.add_user_to_matrix(
+    matrix, is_available = await donate_service.get_matrix_to_add_user(
         first_sponsor,
         current_user,
         donate_sum,
@@ -351,11 +351,7 @@ async def donate_handler(
     )
     now = datetime.now()
 
-    if not donate_service.check_is_matrix_free_with_donates(
-        matrix=matrix,
-        matrix_build_type=build_type,
-        status=status,
-    ):
+    if not is_available:
         await callback.message.edit_text(
             "Подождите пока подтвердятся подарки "
             "других пользователей на этот стол."

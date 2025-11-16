@@ -78,10 +78,21 @@ class DonateService:
         self._extend_donations_data(donations_data, admin, donate_sum)
 
         for matrix in admin_matrices:
-            if get_matrices_length(matrix.matrices) < (level_length * level_length) + level_length:
+            if (
+                get_matrices_length(matrix.matrices) < (level_length * level_length) + level_length
+                and self.check_is_matrix_free_with_donates(matrix, matrix_build_type, status)
+            ):
                 return matrix
 
-        return admin_matrices[-1]
+        matrix_dict = {
+            "owner_id": admin.id,
+            "status": status,
+            "build_type": matrix_build_type,
+        }
+        matrix_entity = MatrixEntity(**matrix_dict)
+        matrix = self._repository_matrix.create(obj_in=matrix_entity)
+
+        return matrix
 
     @inject
     async def _send_donate_to_matrix_owner(
@@ -118,7 +129,7 @@ class DonateService:
 
             return matrix
 
-    async def add_user_to_matrix(
+    async def get_matrix_to_add_user(
             self,
             first_sponsor: TelegramUser,
             current_user: TelegramUser,
@@ -126,7 +137,7 @@ class DonateService:
             status: DonateStatus,
             donations_data: dict,
             matrix_build_type: MatrixBuildType,
-    ) -> Matrix:
+    ) -> Tuple[Matrix, bool]:
         level_length = 2 if matrix_build_type == MatrixBuildType.BINARY else 3
         second_level_length = level_length * level_length
         matrix_max_length = second_level_length + level_length
@@ -146,8 +157,36 @@ class DonateService:
                 level_length=level_length,
             )
 
+        matrices_with_empty_places = []
         for matrix in first_sponsor_matrices:
-            if get_matrices_length(matrix.matrices) < matrix_max_length:
+            has_matrix_empty_places = get_matrices_length(matrix.matrices) < matrix_max_length
+            loguru.logger.info(f"has_matrix_empty_places {matrix.id}: {has_matrix_empty_places}")
+
+            if has_matrix_empty_places:
+                matrices_with_empty_places.append(matrix)
+
+        loguru.logger.info(f"\n")
+
+        if not matrices_with_empty_places:
+            return await self._find_free_matrix(
+                current_user,
+                donate_sum,
+                status,
+                donations_data,
+                matrix_build_type=matrix_build_type,
+                level_length=level_length,
+            ), True
+
+
+        for matrix in matrices_with_empty_places:
+            is_matrix_free_with_donates = self.check_is_matrix_free_with_donates(
+                matrix=matrix,
+                matrix_build_type=matrix_build_type,
+                status=status,
+            )
+            loguru.logger.info(f"is_matrix_free_with_donates {matrix.id}: {is_matrix_free_with_donates}")
+
+            if is_matrix_free_with_donates:
                 return await self._send_donate_to_matrix_owner(
                     matrix,
                     current_user,
@@ -157,17 +196,11 @@ class DonateService:
                     donations_data,
                     matrix_build_type=matrix_build_type,
                     level_length=level_length,
-                )
+                ), True
 
-        else:
-            return await self._find_free_matrix(
-                current_user,
-                donate_sum,
-                status,
-                donations_data,
-                matrix_build_type=matrix_build_type,
-                level_length=level_length,
-            )
+        return matrices_with_empty_places[0], False
+
+
 
     @inject
     async def _find_free_matrix(
@@ -179,11 +212,14 @@ class DonateService:
             matrix_build_type: MatrixBuildType,
             level_length: int,
     ):
+        matrix_max_length = (level_length * level_length) + level_length
+
         while True:
             next_sponsor = self._repository_telegram_user.get(
                 user_id=user_to_add.sponsor_user_id
             )
             if next_sponsor is None:
+                loguru.logger.info("next")
                 return await self._add_user_to_admin_matrix(
                     donate_sum,
                     status,
@@ -208,7 +244,10 @@ class DonateService:
             )
 
             for matrix in next_sponsor_matrices:
-                if get_matrices_length(matrix.matrices) < (level_length * level_length) + level_length:
+                if (
+                    get_matrices_length(matrix.matrices) < matrix_max_length and
+                    self.check_is_matrix_free_with_donates(matrix, matrix_build_type, status)
+                ):
                     await self._send_donate_to_matrix_owner(
                         matrix,
                         user_to_add,
@@ -244,8 +283,6 @@ class DonateService:
 
         if first_level_current_matrix_length < level_length:
             first_level_empty_places_count = level_length - first_level_current_matrix_length
-            loguru.logger.info(str(first_level_empty_places_count))
-            loguru.logger.info(str(current_matrix_donates_count))
 
             if first_level_empty_places_count <= current_matrix_donates_count:
                 return False
@@ -259,7 +296,6 @@ class DonateService:
             parent_first_level_matrices = self._repository_matrix.get_matrices_by_ids_list(
                 matrices_ids=list(parent_matrix.matrices.keys())
             )
-            loguru.logger.info(str(parent_first_level_matrices))
 
             sorted_parent_first_level_matrices = sorted(
                 parent_first_level_matrices,
