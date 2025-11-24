@@ -22,7 +22,7 @@ from app.models.telegram_user import MatrixBuildType
 info_router = Router()
 
 
-@info_router.message(F.text == "🎁 GIFT MAFIA 🎁")
+@info_router.message(F.text == "🎁 GIFT NETWORK 🎁")
 @inject
 async def about_handler(
         message: Message,
@@ -35,7 +35,7 @@ async def about_handler(
         url=settings.presentation_link
     )
     chat_link_button = InlineKeyboardButton(
-        text="💬 Чат Gift Mafia",
+        text="💬 Чат Gift Network",
         url=settings.group_link
     )
     donate_channel_link_button = InlineKeyboardButton(
@@ -241,25 +241,25 @@ async def send_referral_message_handler(
             reply_markup=reply_markup,
         )
 
-    photo = FSInputFile("app/media/gift_mafia_logo.jpg")
-    gift_mafia_keyboard = InlineKeyboardBuilder()
+    photo = FSInputFile("app/media/gift_network_logo.jpg")
+    gift_network_keyboard = InlineKeyboardBuilder()
     registration_link = f"{settings.bot_link}?start={current_user.user_id}"
     registration_button = InlineKeyboardButton(
         text="🚀 РЕГИСТРАЦИЯ 🚀",
         url=registration_link
     )
-    gift_mafia_keyboard.add(registration_button)
+    gift_network_keyboard.add(registration_button)
     await callback.message.answer_photo(
         photo=photo,
         caption=html.bold((
-            "🔥 Жаркая премьера - ‘’GiftMafia’’\n\n"
+            "🔥 Жаркая премьера - ‘’GiftNetwork’’\n\n"
             "💰 Супер алгоритм, $129’960 многократно!\n\n"
             "👑 Стань получателем и забери свою долю!\n\n"
             "👥 Играй вместе с друзьями, получай денежные подарки и наслаждайся жизнью!\n\n"
             "🎟️ Старт, всего $10.\n\n"
             f"{registration_link}"
         )),
-        reply_markup=gift_mafia_keyboard.as_markup(),
+        reply_markup=gift_network_keyboard.as_markup(),
     )
     await callback.message.answer(
         f"Ваша реферальная ссылка: {registration_link}",

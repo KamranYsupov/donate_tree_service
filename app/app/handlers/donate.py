@@ -174,7 +174,7 @@ async def donations_menu_handler(
             matrix_build_type=build_type
         )
         message_text = (
-            f"Партнеров в GiftMafia: <b>{len(users)}</b>\n"
+            f"Партнеров в GiftNetwork: <b>{len(users)}</b>\n"
             f"Всего подарили: <b>${int(bills_sum)}</b>\n\n"
             f"{statuses_statistic_message}\n"
             f"Лично приглашенных: <b>{current_user.invites_count}</b>\n"
