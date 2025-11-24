@@ -20,7 +20,7 @@ def get_donate_confirm_message(
     message_template = (
         "💌 Участник получил 🎁 ${sum}\n\n"
         "🛗 Стол: {status}\n\n"
-        "😎 GiftNetwork - Вместе к целям!"
+        "🌐 Gift Network - Связи решают!"
     )
     if donate_status not in list(statuses_colors_data.keys()):
         return
